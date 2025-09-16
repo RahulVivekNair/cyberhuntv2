@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Cyberhunt Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Tailwind + DaisyUI -->
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body class="min-h-screen bg-base-200 font-sans">
+
+  <!-- Navbar -->
+  <nav class="w-full bg-base-100 shadow-lg py-2 px-4 sm:py-4 sm:px-6 flex justify-between items-center sticky top-0 z-10 rounded-b-2xl transition-all duration-300 ease-in-out">
+    <h1 class="text-xl sm:text-2xl font-bold text-primary transition-all duration-300 ease-in-out hover:scale-105">Cyberhunt</h1>
+    <div class="flex gap-2 sm:gap-4 flex-wrap">
+      <a href="/leaderboard" class="btn btn-outline btn-primary btn-sm transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-lg">Leaderboard</a>
+      <button id="logout" class="btn btn-error btn-sm transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-lg">Logout</button>
+    </div>
+  </nav>
+
+  <div class="container mx-auto p-4 flex flex-col items-center gap-6">
+
+    <!-- Completion Celebration (Hidden by default) -->
+    <div id="completionCelebration" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="card w-full max-w-md bg-gradient-to-br from-success to-primary shadow-2xl rounded-3xl transform scale-0 transition-all duration-500 ease-out" id="celebrationCard">
+        <div class="card-body text-center p-8">
+          <div class="text-6xl mb-4 animate-bounce">🎉</div>
+          <h2 class="text-2xl font-bold text-white mb-2">Congratulations!</h2>
+          <p class="text-white/90 mb-4">You've completed all clues! Checkout the leaderboard to see your timing!</p>
+          <button id="closeCelebration" class="btn btn-white btn-outline mt-4 transition-all duration-300 ease-in-out hover:scale-105">Continue</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Group Info & Current Clue -->
+    <div class="card w-full max-w-lg bg-base-100 shadow-xl rounded-2xl transition-all duration-300 ease-in-out hover:shadow-2xl transform hover:-translate-y-1">
+      <div class="card-body flex flex-col items-center gap-4 p-6">
+        <div id="groupInfo" class="grid grid-cols-3 gap-2 w-full">
+          <div class="badge badge-outline w-full h-8 text-sm font-semibold px-2 truncate transition-all duration-300 ease-in-out hover:scale-105" title="{{.Group.Name}}">
+            {{.Group.Name}}
+          </div>
+          <div class="badge badge-outline w-full h-8 text-sm font-semibold px-2 truncate transition-all duration-300 ease-in-out hover:scale-105 {{if eq .Group.Pathway "blue"}}bg-blue-600 text-white{{else if eq .Group.Pathway "red"}}bg-red-600 text-white{{else if eq .Group.Pathway "green"}}bg-green-600 text-white{{else if eq .Group.Pathway "yellow"}}bg-yellow-400 text-gray-900{{end}}">
+            {{.Group.Pathway}}
+          </div>
+          <div class="badge badge-outline w-full h-8 text-sm font-semibold px-2 truncate transition-all duration-300 ease-in-out hover:scale-105 {{if .Group.Completed}}bg-success text-white animate-pulse{{end}}">
+            {{if .Group.Completed}}COMPLETE{{else}}Clue: {{.Group.CurrentClueIdx}}/{{.TotalClues}}{{end}}
+          </div>
+        </div>
+        
+        {{if .Group.Completed}}
+        <!-- Completion Message -->
+        <div class="mt-2 p-6 bg-gradient-to-br from-success/20 to-primary/20 rounded-xl text-center border-2 border-success/30 transition-all duration-500 ease-in-out">
+          <div class="text-4xl mb-3">🏆</div>
+          <h3 class="text-xl font-bold text-success mb-2">Quest Complete!</h3>
+          <p class="text-lg font-medium">Congratulations on completing all clues! Checkout the leaderboard to see your timing!</p>
+        </div>
+        {{else}}
+        <!-- Current Clue -->
+        <p id="clue" class="mt-2 p-4 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl text-center text-lg font-medium break-words border border-primary/20 transition-all duration-300 ease-in-out hover:shadow-md">{{.Clue}}</p>
+        {{end}}
+        
+        <div id="feedback" class="mt-2 text-center text-sm font-semibold transition-all duration-300 ease-in-out"></div>
+      </div>
+    </div>
+
+    <!-- QR Scanner -->
+    {{if not .Group.Completed}}
+    <div class="card w-full max-w-lg bg-base-100 shadow-xl rounded-2xl transition-all duration-300 ease-in-out hover:shadow-2xl transform hover:-translate-y-1">
+      <div class="card-body flex flex-col items-center gap-4 p-6">
+        <h2 class="text-xl font-bold text-center text-primary transition-all duration-300 ease-in-out">Scan QR Code</h2>
+        <div id="reader" class="mx-auto mt-2 w-full max-w-xs rounded-xl overflow-hidden border-2 border-primary/30 shadow-inner transition-all duration-300 ease-in-out"></div>
+        <button id="toggleCamera" class="btn btn-outline btn-secondary mt-3 transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-lg transform">Turn Camera Off</button>
+      </div>
+    </div>
+    {{else}}
+    <!-- Disabled QR Scanner Message -->
+    <div class="card w-full max-w-lg bg-base-100 shadow-xl rounded-2xl opacity-60 transition-all duration-300 ease-in-out">
+      <div class="card-body flex flex-col items-center gap-4 p-6">
+        <h2 class="text-xl font-bold text-center text-gray-400">QR Scanner</h2>
+        <div class="mx-auto mt-2 w-full max-w-xs rounded-xl overflow-hidden border-2 border-gray-300 bg-gray-100 flex items-center justify-center h-64">
+          <div class="text-center">
+            <div class="text-4xl mb-2 text-gray-400">🔒</div>
+            <p class="text-gray-500 font-medium">Scanner Disabled</p>
+            <p class="text-gray-400 text-sm">Quest Complete!</p>
+          </div>
+        </div>
+        <button class="btn btn-disabled mt-3" disabled>Scanner Inactive</button>
+      </div>
+    </div>
+    {{end}}
+
+  </div>
+
+  <script>
+    const feedbackEl = document.getElementById("feedback");
+    const isCompleted = JSON.parse('{{.Group.Completed}}');
+
+    // Show celebration on page load if completed
+    if (isCompleted) {
+      setTimeout(showCelebration, 500);
+    }
+
+    function showCelebration() {
+      const celebration = document.getElementById("completionCelebration");
+      const card = document.getElementById("celebrationCard");
+      
+      celebration.classList.remove("hidden");
+      setTimeout(() => {
+        card.style.transform = "scale(1)";
+      }, 100);
+    }
+
+    // Close celebration
+    document.getElementById("closeCelebration")?.addEventListener("click", () => {
+      const celebration = document.getElementById("completionCelebration");
+      const card = document.getElementById("celebrationCard");
+      
+      card.style.transform = "scale(0)";
+      setTimeout(() => {
+        celebration.classList.add("hidden");
+      }, 300);
+    });
+
+    // QR scan callback
+    function onScanSuccess(decodedText) {
+      if (!isCompleted) {
+        validateQRCode(decodedText);
+      }
+    }
+
+    // Validate scanned QR code with improved feedback
+    async function validateQRCode(code) {
+      if (isCompleted) return;
+      
+      // Show loading state
+      feedbackEl.textContent = "🔍 Validating...";
+      feedbackEl.className = "text-center text-info font-semibold mt-2 animate-pulse";
+      
+      try {
+        const response = await fetch("/api/scan", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ code })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+          feedbackEl.textContent = "✅ Correct QR code! Loading next clue...";
+          feedbackEl.className = "text-center text-success font-semibold mt-2 animate-pulse transition-all duration-300 ease-in-out";
+          
+          // Add success animation
+          feedbackEl.style.transform = "scale(1.05)";
+          setTimeout(() => {
+            feedbackEl.style.transform = "scale(1)";
+          }, 200);
+          
+          // Reload page with smooth transition
+          setTimeout(() => {
+            document.body.style.opacity = "0";
+            document.body.style.transition = "opacity 0.3s ease-in-out";
+            setTimeout(() => window.location.reload(), 300);
+          }, 1500);
+        } else {
+          feedbackEl.textContent = "❌ Wrong QR code! Try again.";
+          feedbackEl.className = "text-center text-error font-semibold mt-2 animate-shake transition-all duration-300 ease-in-out";
+          
+          // Add error shake animation
+          feedbackEl.style.transform = "translateX(-5px)";
+          setTimeout(() => {
+            feedbackEl.style.transform = "translateX(0)";
+          }, 300);
+        }
+      } catch (err) {
+        feedbackEl.textContent = "⚠️ Scan failed! Please try again.";
+        feedbackEl.className = "text-center text-warning font-semibold mt-2 transition-all duration-300 ease-in-out";
+      }
+
+      // Clear feedback after 5 seconds with fade out
+      setTimeout(() => {
+        feedbackEl.style.opacity = "0";
+        feedbackEl.style.transition = "opacity 0.3s ease-in-out";
+        setTimeout(() => {
+          feedbackEl.textContent = "";
+          feedbackEl.style.opacity = "1";
+        }, 300);
+      }, 5000);
+    }
+
+    // QR Scanner initialization (only if not completed)
+    if (!isCompleted) {
+      const html5QrCode = new Html5Qrcode("reader");
+      let cameraOn = false;
+
+      async function startCamera() {
+        try {
+          await html5QrCode.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: 250 },
+            onScanSuccess
+          );
+          cameraOn = true;
+          const toggleBtn = document.getElementById("toggleCamera");
+          toggleBtn.textContent = "Turn Camera Off";
+          toggleBtn.classList.remove("btn-outline");
+          toggleBtn.classList.add("btn-secondary");
+        } catch (err) {
+          feedbackEl.textContent = "⚠️ Unable to start camera!";
+          feedbackEl.className = "text-center text-warning font-semibold mt-2";
+        }
+      }
+
+      async function stopCamera() {
+        try {
+          await html5QrCode.stop();
+          cameraOn = false;
+          const toggleBtn = document.getElementById("toggleCamera");
+          toggleBtn.textContent = "Turn Camera On";
+          toggleBtn.classList.add("btn-outline");
+          toggleBtn.classList.remove("btn-secondary");
+        } catch (err) {
+          console.error("Error stopping camera:", err);
+        }
+      }
+
+      // Auto-start camera
+      startCamera();
+
+      // Camera toggle with smooth transition
+      document.getElementById("toggleCamera").addEventListener("click", async () => {
+        const btn = document.getElementById("toggleCamera");
+        btn.disabled = true;
+        btn.style.opacity = "0.7";
+        
+        if (cameraOn) {
+          await stopCamera();
+        } else {
+          await startCamera();
+        }
+        
+        btn.disabled = false;
+        btn.style.opacity = "1";
+      });
+    }
+
+    // Logout with confirmation
+    document.getElementById("logout").addEventListener("click", async (e) => {
+      e.preventDefault();
+      
+      if (confirm("Are you sure you want to logout?")) {
+        document.body.style.opacity = "0";
+        document.body.style.transition = "opacity 0.3s ease-in-out";
+        
+        setTimeout(async () => {
+          await fetch("/logout", { method: "POST" });
+          window.location.href = "/login";
+        }, 300);
+      }
+    });
+
+    // Page load animation
+    document.addEventListener("DOMContentLoaded", () => {
+      document.body.style.opacity = "0";
+      setTimeout(() => {
+        document.body.style.opacity = "1";
+        document.body.style.transition = "opacity 0.5s ease-in-out";
+      }, 100);
+    });
+
+  </script>
+
+  <style>
+    /* Enhanced animations */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-3px); }
+      20%, 40%, 60%, 80% { transform: translateX(3px); }
+    }
+    
+    @keyframes bounce {
+      0%, 20%, 53%, 80%, 100% { transform: translateY(0); }
+      40%, 43% { transform: translateY(-8px); }
+      70% { transform: translateY(-4px); }
+      90% { transform: translateY(-2px); }
+    }
+    
+    .animate-shake {
+      animation: shake 0.5s ease-in-out;
+    }
+    
+    .animate-bounce {
+      animation: bounce 2s infinite;
+    }
+    
+    /* Smooth transitions for all interactive elements */
+    * {
+      transition-property: transform, opacity, box-shadow, background-color, border-color;
+      transition-timing-function: ease-in-out;
+    }
+    
+    /* Custom backdrop blur for better performance */
+    .backdrop-blur-sm {
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+    
+    /* Enhanced hover effects */
+    .card:hover {
+      transform: translateY(-2px);
+    }
+    
+    .btn:hover:not(:disabled) {
+      transform: scale(1.02);
+    }
+    
+    /* Loading state styling */
+    .animate-pulse {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+  </style>
+
+</body>
+</html>

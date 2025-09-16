@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Cyberhunt Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Tailwind + DaisyUI -->
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-base-200 font-sans">
+
+  <!-- Navbar -->
+  <nav class="w-full bg-base-100 shadow-lg py-2 px-4 sm:py-4 sm:px-6 flex justify-between items-center sticky top-0 z-10 rounded-b-2xl">
+    <h1 class="text-xl sm:text-2xl font-bold text-primary">Cyberhunt Admin</h1>
+    <div class="flex gap-2 sm:gap-4 flex-wrap items-center">
+      <button id="logout" class="btn btn-error btn-sm">Logout</button>
+    </div>
+  </nav>
+
+  <div class="container mx-auto p-6">
+    <div class="card w-full max-w-6xl mx-auto bg-base-100 shadow-xl rounded-2xl">
+      <div class="card-body p-6">
+        <h1 class="text-3xl font-bold text-center mb-6 text-primary">Admin Panel</h1>
+        
+        <!-- Game Controls -->
+        <div class="card bg-base-200 p-4 mb-6">
+          <div class="text-center">
+            <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-4">
+              <button id="startGameBtn" class="btn btn-primary btn-lg">
+                Start Game
+              </button>
+              <button id="endGameBtn" class="btn btn-error btn-lg">
+                End Game
+              </button>
+              <button id="clearStateBtn" class="btn btn-warning btn-lg">
+                Clear State
+              </button>
+            </div>
+            <div id="statusMessages" class="mt-4"></div>
+          </div>
+        </div>
+
+        <!-- Two Column Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          <!-- Add New Group Form -->
+          <div class="card bg-base-200 p-6">
+            <h2 class="text-2xl font-bold text-center mb-4 text-primary">Add New Group</h2>
+            <form id="addGroupForm">
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text font-semibold">Group Name</span>
+                </label>
+                <input type="text" id="groupName" class="input input-bordered" required placeholder="Enter group name">
+              </div>
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text font-semibold">Pathway</span>
+                </label>
+                <select id="groupPathway" class="select select-bordered" required>
+                  <option value="">Select pathway</option>
+                  <option value="red">🔴 Red</option>
+                  <option value="blue">🔵 Blue</option>
+                  <option value="yellow">🟡 Yellow</option>
+                  <option value="green">🟢 Green</option>
+                </select>
+              </div>
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text font-semibold">Password</span>
+                </label>
+                <div class="relative">
+                  <input type="password" id="groupPassword" class="input input-bordered pr-12" required placeholder="Enter password">
+                  <button type="button" id="generatePassword" class="btn btn-ghost btn-sm absolute right-1 top-1">Gen</button>
+                </div>
+              </div>
+              <div class="form-control mt-6">
+                <button type="submit" class="btn btn-primary">
+                  <span class="loading loading-spinner loading-sm hidden" id="addLoading"></span>
+                  Add Group
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Quick Stats -->
+          <div class="card bg-base-200 p-6">
+            <h2 class="text-2xl font-bold text-center mb-4 text-primary">Quick Stats</h2>
+            <div class="stats stats-vertical shadow bg-base-100">
+              <div class="stat">
+                <div class="stat-figure text-primary">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"></path></svg>
+                </div>
+                <div class="stat-title">Total Groups</div>
+                <div id="totalGroups" class="stat-value">-</div>
+              </div>
+              <div class="stat">
+                <div class="stat-figure text-success">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+                <div class="stat-title">Completed</div>
+                <div id="completedGroups" class="stat-value text-success">-</div>
+              </div>
+              <div class="stat">
+                <div class="stat-figure text-warning">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div class="stat-title">In Progress</div>
+                <div id="inProgressGroups" class="stat-value text-warning">-</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Leaderboard -->
+        <div class="card bg-base-200 p-6 mt-6">
+          <div class="flex flex-col sm:flex-row justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold text-primary">Live Leaderboard</h2>
+            <div class="flex gap-2 mt-2 sm:mt-0">
+              <button id="refreshLeaderboard" class="btn btn-outline btn-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                </svg>
+                Refresh
+              </button>
+              <button class="btn btn-primary btn-sm" id="lastUpdate">Updated: Never</button>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="table w-full table-zebra">
+              <thead>
+                <tr class="bg-primary/10">
+                  <th class="text-sm md:text-base">Rank</th>
+                  <th class="text-sm md:text-base">Group</th>
+                  <th class="text-sm md:text-base">Pathway</th>
+                  <th class="text-sm md:text-base">Progress</th>
+                  <th class="text-sm md:text-base">Status</th>
+                  <th class="text-sm md:text-base">Total Time</th>
+                  <th class="text-sm md:text-base">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboard">
+                <tr><td colspan="7" class="text-center">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Group Modal -->
+  <dialog id="deleteModal" class="modal">
+    <div class="modal-box">
+      <h3 class="font-bold text-lg">Delete Group</h3>
+      <p class="py-4">Are you sure you want to delete this group? This action cannot be undone.</p>
+      <div class="modal-action">
+        <button class="btn" onclick="deleteModal.close()">Cancel</button>
+        <button id="confirmDelete" class="btn btn-error">Delete</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script>
+    let groupToDelete = null;
+
+    // Show status message
+    function showStatus(message, type = "info") {
+      const container = document.getElementById("statusMessages");
+      const alert = document.createElement("div");
+      alert.className = `alert alert-${type} mb-2`;
+      alert.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-info shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <span>${message}</span>
+        <button class="btn btn-sm btn-circle btn-ghost ml-auto" onclick="this.parentElement.remove()">✕</button>
+      `;
+      container.appendChild(alert);
+      
+      // Auto remove after 10 seconds
+      setTimeout(() => {
+        if (alert.parentElement) alert.remove();
+      }, 10000);
+    }
+
+    // Generate random password
+    function generateRandomPassword() {
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      return Array.from({length: 6}, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+    }
+
+    document.getElementById("generatePassword").addEventListener("click", () => {
+      document.getElementById("groupPassword").value = generateRandomPassword();
+    });
+
+    // Logout
+    document.getElementById("logout").addEventListener("click", async () => {
+      await fetch("/logout", { method: "POST" });
+      window.location.href = "adminlogin";
+    });
+
+    // Start Game
+    document.getElementById("startGameBtn").addEventListener("click", async () => {
+      const btn = document.getElementById("startGameBtn");
+      const status = document.getElementById("statusMessages");
+      btn.disabled = true;
+
+      let counter = 5;
+      const countdown = document.createElement("div");
+      countdown.textContent = `Starting game in ${counter} seconds...`;
+      status.appendChild(countdown);
+
+      const interval = setInterval(() => {
+        counter--;
+        if (counter > 0) {
+          countdown.textContent = `Starting game in ${counter} seconds...`;
+        } else {
+          clearInterval(interval);
+          countdown.remove();
+          startGame();
+        }
+      }, 1000);
+
+      async function startGame() {
+        try {
+          const response = await fetch("/api/admin/start", { method: "POST" });
+          const data = await response.json();
+          if (response.ok) {
+            showStatus("Game started successfully!", "success");
+            btn.textContent = "Game Started";
+            document.getElementById("endGameBtn").disabled = false;
+          } else {
+            showStatus("Failed to start game: " + data.error, "error");
+            btn.disabled = false;
+          }
+        } catch (err) {
+          console.error(err);
+          showStatus("Failed to start game: " + err.message, "error");
+          btn.disabled = false;
+        }
+      }
+    });
+
+    // End Game
+    document.getElementById("endGameBtn").addEventListener("click", async () => {
+      if (!confirm("Are you sure you want to end the game?")) return;
+      try {
+        const response = await fetch("/api/admin/end", { method: "POST" });
+        const data = await response.json();
+        if (response.ok) {
+          showStatus("Game ended successfully!", "success");
+          document.getElementById("endGameBtn").disabled = true;
+          document.getElementById("endGameBtn").textContent = "Game Ended";
+        } else {
+          showStatus("Failed to end game: " + data.error, "error");
+        }
+      } catch (err) {
+        console.error(err);
+        showStatus("Failed to end game: " + err.message, "error");
+      }
+    });
+
+    // Clear State
+    document.getElementById("clearStateBtn").addEventListener("click", async () => {
+      if (!confirm("Clear all game state?")) return;
+      try {
+        const response = await fetch("/api/admin/clear", { method: "POST" });
+        const data = await response.json();
+        if (response.ok) {
+          const startBtn = document.getElementById("startGameBtn");
+          const endBtn = document.getElementById("endGameBtn");
+          startBtn.disabled = false;
+          startBtn.textContent = "Start Game";
+          endBtn.disabled = false;
+          endBtn.textContent = "End Game";
+          showStatus("Game state cleared successfully!", "success");
+          // Refresh leaderboard
+          loadLeaderboard();
+        } else {
+          showStatus("Failed to clear state: " + data.error, "error");
+        }
+      } catch (err) {
+        console.error(err);
+        showStatus("Failed to clear state: " + err.message, "error");
+      }
+    });
+
+    // Add New Group - Fixed form validation
+    document.getElementById("addGroupForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("groupName").value.trim();
+      const pathway = document.getElementById("groupPathway").value;
+      const password = document.getElementById("groupPassword").value.trim();
+
+      // Enhanced validation
+      if (!name) {
+        showStatus("Please enter a group name.", "warning");
+        return;
+      }
+      
+      if (!pathway || pathway === "") {
+        showStatus("Please select a pathway.", "warning");
+        return;
+      }
+      
+      if (!password) {
+        showStatus("Please enter a password.", "warning");
+        return;
+      }
+
+      const addButton = document.querySelector('#addGroupForm button[type="submit"]');
+      const loadingSpinner = document.getElementById("addLoading");
+      
+      // Show loading state
+      addButton.disabled = true;
+      loadingSpinner.classList.remove("hidden");
+
+      try {
+        const response = await fetch("/api/admin/group", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, pathway, password })
+        });
+        const data = await response.json();
+        
+        if (response.ok) {
+          showStatus(`Group "${name}" added successfully! Password: ${data.password}`, "success");
+          // Clear form
+          document.getElementById("groupName").value = "";
+          document.getElementById("groupPathway").value = "";
+          document.getElementById("groupPassword").value = "";
+          // Refresh leaderboard
+          loadLeaderboard();
+        } else {
+          showStatus("Failed to add group: " + data.error, "error");
+        }
+      } catch (err) {
+        console.error(err);
+        showStatus("Failed to add group: " + err.message, "error");
+      } finally {
+        // Reset loading state
+        addButton.disabled = false;
+        loadingSpinner.classList.add("hidden");
+      }
+    });
+
+    // Delete group functionality
+    function deleteGroup(groupId, groupName) {
+      groupToDelete = { id: groupId, name: groupName };
+      document.getElementById("deleteModal").showModal();
+    }
+
+    document.getElementById("confirmDelete").addEventListener("click", async () => {
+      if (!groupToDelete) return;
+
+      try {
+        const response = await fetch(`/api/admin/group/${groupToDelete.id}`, { method: "DELETE" });
+        const data = await response.json();
+        if (response.ok) {
+          showStatus(`Group "${groupToDelete.name}" deleted successfully!`, "success");
+          document.getElementById("deleteModal").close();
+          loadLeaderboard();
+        } else {
+          showStatus("Failed to delete group: " + data.error, "error");
+        }
+      } catch (err) {
+        console.error(err);
+        showStatus("Failed to delete group: " + err.message, "error");
+      }
+      groupToDelete = null;
+    });
+
+    // Manual refresh
+    document.getElementById("refreshLeaderboard").addEventListener("click", () => {
+      loadLeaderboard();
+    });
+
+    // Load leaderboard
+    async function loadLeaderboard() {
+      try {
+        const [statsResponse, leaderboardResponse] = await Promise.all([
+          fetch("/api/admin/stats"),
+          fetch("/api/admin/leaderboard")
+        ]);
+
+        const stats = await statsResponse.json();
+        const leaderboard = await leaderboardResponse.json();
+
+        const tbody = document.getElementById("leaderboard");
+
+        tbody.innerHTML = leaderboard.groups.map(g => {
+          const progressPercent = Math.round((g.current_clue_idx / leaderboard.totalClues) * 100);
+
+          return `
+            <tr class="${g.completed ? 'bg-success/10' : ''}">
+              <td class="whitespace-nowrap text-sm md:text-base font-bold">${g.rank} ${g.badge || ''}</td>
+              <td class="text-sm md:text-base font-medium">${g.name}</td>
+              <td class="text-sm md:text-base">
+                <span class="badge badge-outline">${g.pathway.toUpperCase()}</span>
+              </td>
+              <td class="text-sm md:text-base">
+                <div class="flex items-center gap-2">
+                  <span>${g.current_clue_idx}/${leaderboard.totalClues}</span>
+                  <div class="w-12 bg-base-300 rounded-full h-2">
+                    <div class="bg-primary h-2 rounded-full" style="width: ${progressPercent}%"></div>
+                  </div>
+                </div>
+              </td>
+              <td class="text-sm md:text-base">
+                ${g.completed ? '<span class="badge badge-success">Done</span>' : '<span class="badge badge-warning">Playing</span>'}
+              </td>
+              <td class="text-sm md:text-base font-mono">${g.total_time || '-'}</td>
+              <td class="text-sm md:text-base">
+                <button class="btn btn-error btn-xs" onclick="deleteGroup(${g.id}, '${g.name}')">Delete</button>
+              </td>
+            </tr>
+          `;
+        }).join("");
+
+        // Update stats
+        document.getElementById("totalGroups").textContent = stats.totalGroups;
+        document.getElementById("completedGroups").textContent = stats.completedGroups;
+        document.getElementById("inProgressGroups").textContent = stats.inProgressGroups;
+
+        // Update last update time
+        document.getElementById("lastUpdate").textContent = `Updated: ${new Date().toLocaleTimeString()}`;
+
+      } catch (err) {
+        console.error("Failed to load leaderboard:", err);
+        document.getElementById("leaderboard").innerHTML = '<tr><td colspan="7" class="text-center text-error">Failed to load data</td></tr>';
+      }
+    }
+
+    // Initial load
+    loadLeaderboard();
+    setInterval(loadLeaderboard, 5000); // refresh leaderboard every 5s
+  </script>
+</body>
+</html>
