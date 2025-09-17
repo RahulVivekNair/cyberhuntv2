@@ -4,6 +4,7 @@ import (
 	"cyberhunt/internal/models"
 	"database/sql"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -40,7 +41,7 @@ func (h *Handler) Login(c *gin.Context) {
 	)
 
 	if err != nil {
-		c.HTML(http.StatusOK, "login.html", gin.H{"error": "Invalid login!"})
+		c.HTML(http.StatusUnauthorized, "login.html", gin.H{"error": "Invalid login!"})
 		return
 	}
 
@@ -52,7 +53,7 @@ func (h *Handler) Login(c *gin.Context) {
 
 	tokenString, err := token.SignedString([]byte(h.jwtSecret))
 	if err != nil {
-		c.HTML(http.StatusOK, "login.html", gin.H{"error": "Failed to create session"})
+		c.HTML(http.StatusInternalServerError, "login.html", gin.H{"error": "Failed to create session"})
 		return
 	}
 
@@ -65,7 +66,11 @@ func (h *Handler) AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString, err := c.Cookie("auth")
 		if err != nil {
-			c.Redirect(http.StatusFound, "/login")
+			if strings.HasPrefix(c.Request.URL.Path, "/api/") {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			} else {
+				c.Redirect(http.StatusFound, "/login")
+			}
 			c.Abort()
 			return
 		}
@@ -75,7 +80,11 @@ func (h *Handler) AuthMiddleware() gin.HandlerFunc {
 		})
 
 		if err != nil || !token.Valid {
-			c.Redirect(http.StatusFound, "/login")
+			if strings.HasPrefix(c.Request.URL.Path, "/api/") {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			} else {
+				c.Redirect(http.StatusFound, "/login")
+			}
 			c.Abort()
 			return
 		}
@@ -88,6 +97,7 @@ func (h *Handler) AuthMiddleware() gin.HandlerFunc {
 
 func (h *Handler) Logout(c *gin.Context) {
 	c.SetCookie("auth", "", -1, "/", "", false, true)
+	c.SetCookie("adminAuth", "", -1, "/", "", false, true)
 	c.Redirect(http.StatusFound, "/login")
 }
 
@@ -105,7 +115,7 @@ func (h *Handler) AdminLogin(c *gin.Context) {
 	`, name, password).Scan(&admin.ID, &admin.Name, &admin.Password)
 
 	if err != nil {
-		c.HTML(http.StatusOK, "adminLogin.html", gin.H{"error": "Invalid login!"})
+		c.HTML(http.StatusUnauthorized, "adminLogin.html", gin.H{"error": "Invalid login!"})
 		return
 	}
 
@@ -118,7 +128,7 @@ func (h *Handler) AdminLogin(c *gin.Context) {
 
 	tokenString, err := token.SignedString([]byte(h.jwtSecret))
 	if err != nil {
-		c.HTML(http.StatusOK, "adminLogin.html", gin.H{"error": "Failed to create session"})
+		c.HTML(http.StatusInternalServerError, "adminLogin.html", gin.H{"error": "Failed to create session"})
 		return
 	}
 
@@ -131,7 +141,11 @@ func (h *Handler) AdminAuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString, err := c.Cookie("adminAuth")
 		if err != nil {
-			c.Redirect(http.StatusFound, "/adminlogin")
+			if strings.HasPrefix(c.Request.URL.Path, "/api/") {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			} else {
+				c.Redirect(http.StatusFound, "/adminlogin")
+			}
 			c.Abort()
 			return
 		}
@@ -141,14 +155,22 @@ func (h *Handler) AdminAuthMiddleware() gin.HandlerFunc {
 		})
 
 		if err != nil || !token.Valid {
-			c.Redirect(http.StatusFound, "/adminlogin")
+			if strings.HasPrefix(c.Request.URL.Path, "/api/") {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			} else {
+				c.Redirect(http.StatusFound, "/adminlogin")
+			}
 			c.Abort()
 			return
 		}
 
 		claims := token.Claims.(jwt.MapClaims)
 		if isAdmin, ok := claims["isAdmin"].(bool); !ok || !isAdmin {
-			c.Redirect(http.StatusFound, "/adminlogin")
+			if strings.HasPrefix(c.Request.URL.Path, "/api/") {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			} else {
+				c.Redirect(http.StatusFound, "/adminlogin")
+			}
 			c.Abort()
 			return
 		}

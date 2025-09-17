@@ -42,7 +42,7 @@ func main() {
 	r.POST("/login", h.Login)
 	r.GET("/game", h.AuthMiddleware(), h.GamePage)
 	r.POST("/api/scan", h.AuthMiddleware(), h.ScanQR)
-	r.GET("/leaderboard", h.LeaderboardPage)
+	r.GET("/leaderboard", h.AuthMiddleware(), h.LeaderboardPage)
 	r.GET("/admin", h.AdminAuthMiddleware(), h.AdminPage)
 	r.GET("/adminlogin", h.AdminLoginPage)
 	r.POST("/adminlogin", h.AdminLogin)
@@ -54,13 +54,13 @@ func main() {
 	r.GET("/api/admin/status", h.AdminAuthMiddleware(), h.GetGameStatus)
 	r.GET("/api/admin/stats", h.AdminAuthMiddleware(), h.GetStats)
 	r.GET("/api/admin/leaderboard", h.AdminAuthMiddleware(), h.AdminLeaderboard)
-	r.GET("/api/leaderboard", h.GetLeaderboard) // Public leaderboard API
+	r.GET("/api/leaderboard", h.AuthMiddleware(), h.GetLeaderboard)
 	r.POST("/logout", h.Logout)
 
 	// Seed routes
-	r.GET("/seed", h.SeedPage)
-	r.POST("/api/seed/groups", h.SeedGroups)
-	r.POST("/api/seed/clues", h.SeedClues)
+	r.GET("/seed", h.AdminAuthMiddleware(), h.SeedPage)
+	r.POST("/api/seed/groups", h.AdminAuthMiddleware(), h.SeedGroups)
+	r.POST("/api/seed/clues", h.AdminAuthMiddleware(), h.SeedClues)
 
 	// Start server
 	log.Println("Server starting on", *addr)
