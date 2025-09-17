@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"cyberhunt/internal/database"
+	"cyberhunt/internal/models"
 	"database/sql"
 	"net/http"
 	"time"
@@ -30,9 +30,9 @@ func (h *Handler) Login(c *gin.Context) {
 	name := c.PostForm("name")
 	password := c.PostForm("password")
 
-	var group database.Group
+	var group models.Group
 	err := h.db.QueryRow(`
-		SELECT id, name, pathway, current_clue_idx, completed, end_time, password 
+		SELECT id, name, pathway, current_clue_idx, completed, end_time, password
 		FROM groups WHERE name = ? AND password = ?
 	`, name, password).Scan(
 		&group.ID, &group.Name, &group.Pathway, &group.CurrentClueIdx,
@@ -99,7 +99,7 @@ func (h *Handler) AdminLogin(c *gin.Context) {
 	name := c.PostForm("name")
 	password := c.PostForm("password")
 
-	var admin database.Admin
+	var admin models.Admin
 	err := h.db.QueryRow(`
 		SELECT id, name, password FROM admins WHERE name = ? AND password = ?
 	`, name, password).Scan(&admin.ID, &admin.Name, &admin.Password)

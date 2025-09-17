@@ -1,11 +1,10 @@
 package handlers
 
 import (
-	"cyberhunt/internal/database"
+	"cyberhunt/internal/models"
 	"database/sql"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,15 +14,16 @@ func (h *Handler) LeaderboardPage(c *gin.Context) {
 }
 
 func (h *Handler) GetLeaderboard(c *gin.Context) {
-	// Get game settings
+	// Get total_clues
 	var totalClues int
-	var startTime time.Time
-	err := h.db.QueryRow(`
-		SELECT total_clues, start_time FROM game_settings
-	`).Scan(&totalClues, &startTime)
+	err := h.db.QueryRow(`SELECT total_clues FROM game_settings`).Scan(&totalClues)
 	if err != nil {
 		totalClues = 1
 	}
+
+	// Get start_time (nullable)
+	var startTime sql.NullTime
+	_ = h.db.QueryRow(`SELECT start_time FROM game_settings`).Scan(&startTime)
 
 	// Get groups ordered by completion status and progress
 	rows, err := h.db.Query(`
@@ -40,7 +40,7 @@ func (h *Handler) GetLeaderboard(c *gin.Context) {
 	var groups []gin.H
 	rank := 1
 	for rows.Next() {
-		var group database.Group
+		var group models.Group
 		var endTime sql.NullTime
 
 		err := rows.Scan(
@@ -55,10 +55,10 @@ func (h *Handler) GetLeaderboard(c *gin.Context) {
 			group.EndTime = &endTime.Time
 		}
 
-		// Calculate total time if completed
+		// Calculate total time if completed and game actually started
 		var totalTime string
-		if group.Completed && group.EndTime != nil {
-			duration := group.EndTime.Sub(startTime)
+		if group.Completed && group.EndTime != nil && startTime.Valid {
+			duration := group.EndTime.Sub(startTime.Time)
 			hours := int(duration.Hours())
 			minutes := int(duration.Minutes()) % 60
 			seconds := int(duration.Seconds()) % 60
@@ -92,7 +92,6 @@ func (h *Handler) GetLeaderboard(c *gin.Context) {
 
 		rank++
 	}
-
 	c.JSON(http.StatusOK, gin.H{
 		"groups":     groups,
 		"totalClues": totalClues,

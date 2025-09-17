@@ -2,42 +2,9 @@ package database
 
 import (
 	"database/sql"
-	"time"
 
 	_ "modernc.org/sqlite"
 )
-
-type Group struct {
-	ID             int
-	Name           string
-	Pathway        string
-	CurrentClueIdx int
-	Completed      bool
-	EndTime        *time.Time
-	Password       string
-}
-
-type Clue struct {
-	ID      int
-	Pathway string
-	Index   int
-	Content string
-	QRCode  string
-}
-
-type GameSettings struct {
-	ID          int
-	TotalClues  int
-	StartTime   *time.Time
-	GameStarted bool
-	GameEnded   bool
-}
-
-type Admin struct {
-	ID       int
-	Name     string
-	Password string
-}
 
 func InitDB(dbPath string) (*sql.DB, error) {
 	db, err := sql.Open("sqlite", dbPath)

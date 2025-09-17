@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"cyberhunt/internal/database"
+	"cyberhunt/internal/models"
 	"net/http"
 	"time"
 
@@ -11,9 +11,9 @@ import (
 func (h *Handler) GamePage(c *gin.Context) {
 	groupID, _ := c.Get("groupID")
 
-	var group database.Group
+	var group models.Group
 	err := h.db.QueryRow(`
-		SELECT id, name, pathway, current_clue_idx, completed, end_time 
+		SELECT id, name, pathway, current_clue_idx, completed, end_time
 		FROM groups WHERE id = ?
 	`, groupID).Scan(
 		&group.ID, &group.Name, &group.Pathway, &group.CurrentClueIdx,
@@ -35,7 +35,7 @@ func (h *Handler) GamePage(c *gin.Context) {
 	// Get current clue if not completed
 	var clueContent string
 	if !group.Completed {
-		var clue database.Clue
+		var clue models.Clue
 		err = h.db.QueryRow(`
 			SELECT content FROM clues WHERE pathway = ? AND index_num = ?
 		`, group.Pathway, group.CurrentClueIdx).Scan(&clue.Content)
@@ -59,9 +59,9 @@ func (h *Handler) GamePage(c *gin.Context) {
 func (h *Handler) ScanQR(c *gin.Context) {
 	groupID, _ := c.Get("groupID")
 
-	var group database.Group
+	var group models.Group
 	err := h.db.QueryRow(`
-		SELECT id, name, pathway, current_clue_idx, completed 
+		SELECT id, name, pathway, current_clue_idx, completed
 		FROM groups WHERE id = ?
 	`, groupID).Scan(
 		&group.ID, &group.Name, &group.Pathway, &group.CurrentClueIdx, &group.Completed,
