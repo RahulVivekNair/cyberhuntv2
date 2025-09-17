@@ -18,7 +18,7 @@ type Handler struct {
 func NewHandler(db *sql.DB) *Handler {
 	return &Handler{
 		db:        db,
-		jwtSecret: "your-secret-key", // Change this in production
+		jwtSecret: "05f3b711c3722735c25ddc7587cb9cb2", // Change this in production
 	}
 }
 
