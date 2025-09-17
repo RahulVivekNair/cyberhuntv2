@@ -16,10 +16,11 @@ func (h *Handler) AdminPage(c *gin.Context) {
 }
 
 func (h *Handler) StartGame(c *gin.Context) {
+	startTime := time.Now().UTC()
 	_, err := h.db.Exec(`
-		UPDATE game_settings 
-		SET game_started = TRUE, start_time = datetime('now')
-	`)
+		UPDATE game_settings
+		SET game_started = TRUE, start_time = ?
+	`, startTime)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start game"})
 		return

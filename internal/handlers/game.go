@@ -116,7 +116,7 @@ func (h *Handler) ScanQR(c *gin.Context) {
 
 	var endTime interface{}
 	if completed {
-		t := time.Now().UTC() // or Local() depending on your needs
+		t := time.Now().UTC()
 		endTime = t
 	} else {
 		endTime = nil
