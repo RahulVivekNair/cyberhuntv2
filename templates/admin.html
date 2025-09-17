@@ -161,6 +161,29 @@
       </div>
     </div>
   </dialog>
+  <!-- End Game Modal -->
+  <dialog id="endGameModal" class="modal">
+    <div class="modal-box">
+      <h3 class="font-bold text-lg">End Game</h3>
+      <p class="py-4">Are you sure you want to end the game? This will stop all active gameplay.</p>
+      <div class="modal-action">
+        <button class="btn" onclick="endGameModal.close()">Cancel</button>
+        <button id="confirmEndGame" class="btn btn-error">End Game</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Clear State Modal -->
+  <dialog id="clearStateModal" class="modal">
+    <div class="modal-box">
+      <h3 class="font-bold text-lg">Clear Game State</h3>
+      <p class="py-4">Are you sure you want to clear all game state? This will reset all progress and cannot be undone.</p>
+      <div class="modal-action">
+        <button class="btn" onclick="clearStateModal.close()">Cancel</button>
+        <button id="confirmClearState" class="btn btn-warning">Clear State</button>
+      </div>
+    </div>
+  </dialog>
 
   <script>
     let groupToDelete = null;
@@ -242,8 +265,12 @@
     });
 
     // End Game
-    document.getElementById("endGameBtn").addEventListener("click", async () => {
-      if (!confirm("Are you sure you want to end the game?")) return;
+    document.getElementById("endGameBtn").addEventListener("click", () => {
+      document.getElementById("endGameModal").showModal();
+    });
+
+    document.getElementById("confirmEndGame").addEventListener("click", async () => {
+      document.getElementById("endGameModal").close();
       try {
         const response = await fetch("/api/admin/end", { method: "POST" });
         const data = await response.json();
@@ -261,8 +288,12 @@
     });
 
     // Clear State
-    document.getElementById("clearStateBtn").addEventListener("click", async () => {
-      if (!confirm("Clear all game state?")) return;
+    document.getElementById("clearStateBtn").addEventListener("click", () => {
+      document.getElementById("clearStateModal").showModal();
+    });
+
+    document.getElementById("confirmClearState").addEventListener("click", async () => {
+      document.getElementById("clearStateModal").close();
       try {
         const response = await fetch("/api/admin/clear", { method: "POST" });
         const data = await response.json();
