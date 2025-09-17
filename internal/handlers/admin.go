@@ -111,6 +111,28 @@ func (h *Handler) DeleteGroup(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Group deleted successfully!"})
 }
 
+func (h *Handler) GetGameStatus(c *gin.Context) {
+	var gameStarted, gameEnded bool
+	var startTime sql.NullTime
+	err := h.db.QueryRow(`
+		SELECT game_started, game_ended, start_time FROM game_settings
+	`).Scan(&gameStarted, &gameEnded, &startTime)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get game status"})
+		return
+	}
+
+	response := gin.H{
+		"game_started": gameStarted,
+		"game_ended":   gameEnded,
+	}
+	if startTime.Valid {
+		response["start_time"] = startTime.Time.Format(time.RFC3339)
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
 func (h *Handler) GetStats(c *gin.Context) {
 	var totalGroups, completedGroups, inProgressGroups int
 

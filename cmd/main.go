@@ -16,7 +16,7 @@ func main() {
 	flag.Parse()
 
 	// Initialize database
-	db, err := database.InitDB("data/cyberhunt.db")
+	db, err := database.InitDB("data/cyberhunt.db?_journal=WAL&_timeout=5000&_fk=true")
 	if err != nil {
 		log.Fatal("Failed to initialize database:", err)
 	}
@@ -51,10 +51,16 @@ func main() {
 	r.POST("/api/admin/clear", h.AdminAuthMiddleware(), h.ClearState)
 	r.POST("/api/admin/group", h.AdminAuthMiddleware(), h.AddGroup)
 	r.DELETE("/api/admin/group/:id", h.AdminAuthMiddleware(), h.DeleteGroup)
+	r.GET("/api/admin/status", h.AdminAuthMiddleware(), h.GetGameStatus)
 	r.GET("/api/admin/stats", h.AdminAuthMiddleware(), h.GetStats)
 	r.GET("/api/admin/leaderboard", h.AdminAuthMiddleware(), h.AdminLeaderboard)
 	r.GET("/api/leaderboard", h.GetLeaderboard) // Public leaderboard API
 	r.POST("/logout", h.Logout)
+
+	// Seed routes
+	r.GET("/seed", h.SeedPage)
+	r.POST("/api/seed/groups", h.SeedGroups)
+	r.POST("/api/seed/clues", h.SeedClues)
 
 	// Start server
 	log.Println("Server starting on", *addr)

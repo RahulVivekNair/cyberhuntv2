@@ -37,7 +37,8 @@
                 Clear State
               </button>
             </div>
-            <div id="statusMessages" class="mt-4"></div>
+            <div id="gameStatus" class="mt-4 text-center"></div>
+            <div id="statusMessages"></div>
           </div>
         </div>
 
@@ -199,6 +200,65 @@
 
   <script>
     let groupToDelete = null;
+    let gameStarted = false;
+    let gameEnded = false;
+    let startTime = null;
+    let elapsedInterval = null;
+
+    // Update game status display
+    function updateGameStatus() {
+      const statusDiv = document.getElementById("gameStatus");
+      if (gameEnded) {
+        statusDiv.innerHTML = `<strong>Game Ended</strong>`;
+      } else if (gameStarted && startTime) {
+        const elapsed = Math.floor((new Date() - startTime) / 1000);
+        const minutes = Math.floor(elapsed / 60);
+        const seconds = elapsed % 60;
+        statusDiv.innerHTML = `<strong>Game Running</strong> - Elapsed Time: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+      } else {
+        statusDiv.innerHTML = `<strong>Game Not Started</strong>`;
+      }
+    }
+
+    // Load initial game status from server
+    async function loadGameStatus() {
+      try {
+        const response = await fetch("/api/admin/status");
+        const data = await response.json();
+        if (response.ok) {
+          gameEnded = data.game_ended;
+          const startBtn = document.getElementById("startGameBtn");
+          const endBtn = document.getElementById("endGameBtn");
+          if (data.game_ended) {
+            // Game ended
+            gameStarted = false;
+            startBtn.disabled = false;
+            startBtn.textContent = "Start Game";
+            endBtn.disabled = true;
+            endBtn.textContent = "Game Ended";
+          } else if (data.game_started) {
+            // Game running
+            gameStarted = true;
+            startTime = new Date(data.start_time);
+            elapsedInterval = setInterval(updateGameStatus, 1000);
+            startBtn.disabled = true;
+            startBtn.textContent = "Game Started";
+            endBtn.disabled = false;
+          } else {
+            // Game not started
+            gameStarted = false;
+            startBtn.disabled = false;
+            startBtn.textContent = "Start Game";
+            endBtn.disabled = true;
+          }
+          updateGameStatus();
+        } else {
+          console.error("Failed to load game status:", data.error);
+        }
+      } catch (err) {
+        console.error("Failed to load game status:", err);
+      }
+    }
 
     // Show status message
     function showStatus(message, type = "info") {
@@ -274,10 +334,14 @@
           const response = await fetch("/api/admin/start", { method: "POST" });
           const data = await response.json();
           if (response.ok) {
-            showStatus("Game started successfully!", "success");
-            btn.textContent = "Game Started";
-            document.getElementById("endGameBtn").disabled = false;
-          } else {
+              showStatus("Game started successfully!", "success");
+              btn.textContent = "Game Started";
+              document.getElementById("endGameBtn").disabled = false;
+              gameStarted = true;
+              startTime = new Date();
+              elapsedInterval = setInterval(updateGameStatus, 1000);
+              updateGameStatus();
+            } else {
             showStatus("Failed to start game: " + data.error, "error");
             btn.disabled = false;
           }
@@ -303,6 +367,13 @@
           showStatus("Game ended successfully!", "success");
           document.getElementById("endGameBtn").disabled = true;
           document.getElementById("endGameBtn").textContent = "Game Ended";
+          gameStarted = false;
+          gameEnded = true;
+          if (elapsedInterval) clearInterval(elapsedInterval);
+          elapsedInterval = null;
+          startTime = null;
+          document.getElementById("startGameBtn").disabled = false;
+          updateGameStatus();
         } else {
           showStatus("Failed to end game: " + data.error, "error");
         }
@@ -327,8 +398,14 @@
           const endBtn = document.getElementById("endGameBtn");
           startBtn.disabled = false;
           startBtn.textContent = "Start Game";
-          endBtn.disabled = false;
+          endBtn.disabled = true;
           endBtn.textContent = "End Game";
+          gameStarted = false;
+          gameEnded = false;
+          if (elapsedInterval) clearInterval(elapsedInterval);
+          elapsedInterval = null;
+          startTime = null;
+          updateGameStatus();
           showStatus("Game state cleared successfully!", "success");
           // Refresh leaderboard
           loadLeaderboard();
@@ -488,6 +565,7 @@
     }
 
     // Initial load
+    loadGameStatus();
     loadLeaderboard();
     setInterval(loadLeaderboard, 5000); // refresh leaderboard every 5s
   </script>

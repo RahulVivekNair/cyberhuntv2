@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Seed Data</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Tailwind + DaisyUI -->
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-base-200 font-sans">
+
+  <!-- Navbar -->
+  <nav class="w-full bg-base-100 shadow-lg py-2 px-4 sm:py-4 sm:px-6 flex justify-between items-center sticky top-0 z-10 rounded-b-2xl">
+    <h1 class="text-xl sm:text-2xl font-bold text-primary">Cyberhunt Seed</h1>
+  </nav>
+
+  <div class="container mx-auto p-6">
+    <div class="card w-full max-w-4xl mx-auto bg-base-100 shadow-xl rounded-2xl">
+      <div class="card-body p-6">
+        <h1 class="text-3xl font-bold text-center mb-6 text-primary">Seed Database</h1>
+
+        <!-- Seed Buttons -->
+        <div class="flex flex-col sm:flex-row gap-6 justify-center items-center">
+          <button id="seedGroupsBtn" class="btn btn-primary btn-lg">
+            Seed Groups
+          </button>
+          <button id="seedCluesBtn" class="btn btn-secondary btn-lg">
+            Seed Clues
+          </button>
+        </div>
+
+        <!-- Status Messages -->
+        <div id="statusMessages" class="mt-6"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Show status message
+    function showStatus(message, type = "info") {
+      const container = document.getElementById("statusMessages");
+      const alert = document.createElement("div");
+      alert.className = `alert alert-${type} mb-2`;
+      alert.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-info shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <span>${message}</span>
+        <button class="btn btn-sm btn-circle btn-ghost ml-auto" onclick="this.parentElement.remove()">✕</button>
+      `;
+      container.appendChild(alert);
+
+      // Auto remove after 10 seconds
+      setTimeout(() => {
+        if (alert.parentElement) alert.remove();
+      }, 10000);
+    }
+
+    // Seed Groups
+    document.getElementById("seedGroupsBtn").addEventListener("click", async () => {
+      const btn = document.getElementById("seedGroupsBtn");
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = "Seeding...";
+
+      try {
+        const response = await fetch("/api/seed/groups", { method: "POST" });
+        const data = await response.json();
+        if (response.ok) {
+          showStatus("Groups seeded successfully!", "success");
+        } else {
+          showStatus("Failed to seed groups: " + data.error, "error");
+        }
+      } catch (err) {
+        console.error(err);
+        showStatus("Failed to seed groups: " + err.message, "error");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    });
+
+    // Seed Clues
+    document.getElementById("seedCluesBtn").addEventListener("click", async () => {
+      const btn = document.getElementById("seedCluesBtn");
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = "Seeding...";
+
+      try {
+        const response = await fetch("/api/seed/clues", { method: "POST" });
+        const data = await response.json();
+        if (response.ok) {
+          showStatus("Clues seeded successfully!", "success");
+        } else {
+          showStatus("Failed to seed clues: " + data.error, "error");
+        }
+      } catch (err) {
+        console.error(err);
+        showStatus("Failed to seed clues: " + err.message, "error");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    });
+  </script>
+</body>
+</html>
