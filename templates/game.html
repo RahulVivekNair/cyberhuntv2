@@ -157,8 +157,8 @@
     <div class="card w-full max-w-lg bg-base-100 shadow-xl rounded-2xl transition-all duration-300 ease-in-out hover:shadow-2xl transform hover:-translate-y-1">
       <div class="card-body flex flex-col items-center gap-4 p-6">
         <div id="groupInfo" class="grid grid-cols-3 gap-2 w-full">
-          <div class="badge badge-outline w-full h-8 text-sm font-semibold px-2 truncate transition-all duration-300 ease-in-out hover:scale-105" title="{{.Group.Name}}">
-            {{.Group.Name}}
+          <div class="badge badge-outline w-full h-8 text-sm font-semibold px-2 overflow-hidden text-left transition-all duration-300 ease-in-out hover:scale-105" title="{{.Group.Name}}">
+            <span class="truncate block">{{.Group.Name}}</span>
           </div>
           <div class="badge badge-outline w-full h-8 text-sm font-semibold px-2 truncate transition-all duration-300 ease-in-out hover:scale-105 {{if eq .Group.Pathway "blue"}}bg-blue-600 text-white{{else if eq .Group.Pathway "red"}}bg-red-600 text-white{{else if eq .Group.Pathway "green"}}bg-green-600 text-white{{else if eq .Group.Pathway "yellow"}}bg-yellow-400 text-gray-900{{end}}">
             {{.Group.Pathway}}
@@ -547,16 +547,6 @@
       }, 300);
     });
 
-    // Page load animation (skip if group is completed - celebration will handle entrance)
-    document.addEventListener("DOMContentLoaded", () => {
-      if (!isCompleted) {
-        document.body.style.opacity = "0";
-        setTimeout(() => {
-          document.body.style.opacity = "1";
-          document.body.style.transition = "opacity 0.5s ease-in-out";
-        }, 100);
-      }
-    });
 
     // Cleanup on page unload
     window.addEventListener("beforeunload", async () => {
