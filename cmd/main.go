@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net/http"
 
@@ -11,6 +12,9 @@ import (
 )
 
 func main() {
+	var addr = flag.String("addr", ":8080", "Address and port to run the server")
+	flag.Parse()
+
 	// Initialize database
 	db, err := database.InitDB("data/cyberhunt.db")
 	if err != nil {
@@ -53,8 +57,8 @@ func main() {
 	r.POST("/logout", h.Logout)
 
 	// Start server
-	log.Println("Server starting on :8080")
-	if err := r.Run(":8080"); err != nil {
+	log.Println("Server starting on", *addr)
+	if err := r.Run(*addr); err != nil {
 		log.Fatal("Failed to start server:", err)
 	}
 }
