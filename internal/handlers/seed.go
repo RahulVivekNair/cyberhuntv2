@@ -28,10 +28,7 @@ func (h *Handler) SeedGroups(c *gin.Context) {
 			name := fmt.Sprintf("Group_%s_%03d", pathway, i+1)
 			password := "test"
 
-			_, err := h.db.Exec(`
-				INSERT INTO groups (name, pathway, password)
-				VALUES (?, ?, ?)
-			`, name, pathway, password)
+			err := h.groupService.AddGroup(name, pathway, password)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to seed groups"})
 				return
@@ -90,7 +87,7 @@ func (h *Handler) SeedClues(c *gin.Context) {
 	}
 
 	// Clear existing clues
-	_, err := h.db.Exec("DELETE FROM clues")
+	err := h.clueService.ClearClues()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to clear existing clues"})
 		return
@@ -101,10 +98,7 @@ func (h *Handler) SeedClues(c *gin.Context) {
 			qrCode := fmt.Sprintf("%s_%03d", pathway, i)
 			content := riddles[rand.Intn(len(riddles))]
 
-			_, err := h.db.Exec(`
-				INSERT INTO clues (pathway, index_num, content, qrcode)
-				VALUES (?, ?, ?, ?)
-			`, pathway, i, content, qrCode)
+			err := h.clueService.AddClue(pathway, i, content, qrCode)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to insert clue %s_%03d: %v", pathway, i, err)})
 				return

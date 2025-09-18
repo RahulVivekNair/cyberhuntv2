@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"cyberhunt/internal/models"
 	"net/http"
 	"time"
 
@@ -11,35 +10,19 @@ import (
 func (h *Handler) GamePage(c *gin.Context) {
 	groupID, _ := c.Get("groupID")
 
-	var group models.Group
-	err := h.db.QueryRow(`
-		SELECT id, name, pathway, current_clue_idx, completed, end_time
-		FROM groups WHERE id = ?
-	`, groupID).Scan(
-		&group.ID, &group.Name, &group.Pathway, &group.CurrentClueIdx,
-		&group.Completed, &group.EndTime,
-	)
-
+	group, err := h.groupService.GetGroupByID(groupID.(int))
 	if err != nil {
 		c.Redirect(http.StatusFound, "/login")
 		return
 	}
 
 	// Get total clues
-	var totalClues int
-	err = h.db.QueryRow("SELECT total_clues FROM game_settings").Scan(&totalClues)
-	if err != nil {
-		totalClues = 1
-	}
+	totalClues, _ := h.gameService.GetTotalClues()
 
 	// Get current clue if not completed
 	var clueContent string
 	if !group.Completed {
-		var clue models.Clue
-		err = h.db.QueryRow(`
-			SELECT content FROM clues WHERE pathway = ? AND index_num = ?
-		`, group.Pathway, group.CurrentClueIdx).Scan(&clue.Content)
-
+		clue, err := h.clueService.GetClueByPathwayAndIndex(group.Pathway, group.CurrentClueIdx)
 		if err != nil {
 			clueContent = "No clue found!"
 		} else {
@@ -59,14 +42,7 @@ func (h *Handler) GamePage(c *gin.Context) {
 func (h *Handler) ScanQR(c *gin.Context) {
 	groupID, _ := c.Get("groupID")
 
-	var group models.Group
-	err := h.db.QueryRow(`
-		SELECT id, name, pathway, current_clue_idx, completed
-		FROM groups WHERE id = ?
-	`, groupID).Scan(
-		&group.ID, &group.Name, &group.Pathway, &group.CurrentClueIdx, &group.Completed,
-	)
-
+	group, err := h.groupService.GetGroupByID(groupID.(int))
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Group not found"})
 		return
@@ -87,47 +63,32 @@ func (h *Handler) ScanQR(c *gin.Context) {
 	}
 
 	// Get expected QR code for current clue
-	var expectedCode string
-	err = h.db.QueryRow(`
-		SELECT qrcode FROM clues WHERE pathway = ? AND index_num = ?
-	`, group.Pathway, group.CurrentClueIdx).Scan(&expectedCode)
-
+	expectedClue, err := h.clueService.GetClueByPathwayAndIndex(group.Pathway, group.CurrentClueIdx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Clue not found"})
 		return
 	}
 
 	// Validate QR code
-	if request.Code != expectedCode {
+	if request.Code != expectedClue.QRCode {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Wrong QR code!"})
 		return
 	}
 
 	// Get total clues
-	var totalClues int
-	err = h.db.QueryRow("SELECT total_clues FROM game_settings").Scan(&totalClues)
-	if err != nil {
-		totalClues = 1
-	}
+	totalClues, _ := h.gameService.GetTotalClues()
 
 	// Update group progress
 	newClueIdx := group.CurrentClueIdx + 1
 	completed := newClueIdx >= totalClues
 
-	var endTime interface{}
+	var endTime *time.Time
 	if completed {
 		t := time.Now().UTC()
-		endTime = t
-	} else {
-		endTime = nil
+		endTime = &t
 	}
 
-	_, err = h.db.Exec(`
-    UPDATE groups 
-    SET current_clue_idx = ?, completed = ?, end_time = ?
-    WHERE id = ?
-`, newClueIdx, completed, endTime, groupID)
-
+	err = h.groupService.UpdateGroupProgress(groupID.(int), newClueIdx, completed, endTime)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update progress"})
 		return

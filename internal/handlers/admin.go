@@ -1,11 +1,10 @@
 package handlers
 
 import (
-	"cyberhunt/internal/models"
-	"database/sql"
 	"fmt"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -16,11 +15,7 @@ func (h *Handler) AdminPage(c *gin.Context) {
 }
 
 func (h *Handler) StartGame(c *gin.Context) {
-	startTime := time.Now().UTC()
-	_, err := h.db.Exec(`
-		UPDATE game_settings
-		SET game_started = TRUE, start_time = ?
-	`, startTime)
+	err := h.gameService.StartGame()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start game"})
 		return
@@ -30,9 +25,7 @@ func (h *Handler) StartGame(c *gin.Context) {
 }
 
 func (h *Handler) EndGame(c *gin.Context) {
-	_, err := h.db.Exec(`
-		UPDATE game_settings SET game_ended = TRUE
-	`)
+	err := h.gameService.EndGame()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to end game"})
 		return
@@ -43,20 +36,14 @@ func (h *Handler) EndGame(c *gin.Context) {
 
 func (h *Handler) ClearState(c *gin.Context) {
 	// Reset game settings
-	_, err := h.db.Exec(`
-		UPDATE game_settings 
-		SET game_started = FALSE, game_ended = FALSE, start_time = NULL
-	`)
+	err := h.gameService.ClearState()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to clear game state"})
 		return
 	}
 
 	// Reset all groups
-	_, err = h.db.Exec(`
-		UPDATE groups 
-		SET current_clue_idx = 0, completed = FALSE, end_time = NULL
-	`)
+	err = h.groupService.ResetGroups()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reset groups"})
 		return
@@ -83,11 +70,7 @@ func (h *Handler) AddGroup(c *gin.Context) {
 		password = generateRandomPassword(6)
 	}
 
-	_, err := h.db.Exec(`
-		INSERT INTO groups (name, pathway, password) 
-		VALUES (?, ?, ?)
-	`, request.Name, request.Pathway, password)
-
+	err := h.groupService.AddGroup(request.Name, request.Pathway, password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add group"})
 		return
@@ -100,9 +83,14 @@ func (h *Handler) AddGroup(c *gin.Context) {
 }
 
 func (h *Handler) DeleteGroup(c *gin.Context) {
-	groupID := c.Param("id")
+	groupIDStr := c.Param("id")
+	groupID, err := strconv.Atoi(groupIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
+		return
+	}
 
-	_, err := h.db.Exec("DELETE FROM groups WHERE id = ?", groupID)
+	err = h.groupService.DeleteGroup(groupID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete group"})
 		return
@@ -112,47 +100,29 @@ func (h *Handler) DeleteGroup(c *gin.Context) {
 }
 
 func (h *Handler) GetGameStatus(c *gin.Context) {
-	var gameStarted, gameEnded bool
-	var startTime sql.NullTime
-	err := h.db.QueryRow(`
-		SELECT game_started, game_ended, start_time FROM game_settings
-	`).Scan(&gameStarted, &gameEnded, &startTime)
+	settings, err := h.gameService.GetGameStatus()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get game status"})
 		return
 	}
 
 	response := gin.H{
-		"game_started": gameStarted,
-		"game_ended":   gameEnded,
+		"game_started": settings.GameStarted,
+		"game_ended":   settings.GameEnded,
 	}
-	if startTime.Valid {
-		response["start_time"] = startTime.Time.Format(time.RFC3339)
+	if settings.StartTime != nil {
+		response["start_time"] = settings.StartTime.Format(time.RFC3339)
 	}
 
 	c.JSON(http.StatusOK, response)
 }
 
 func (h *Handler) GetStats(c *gin.Context) {
-	var totalGroups, completedGroups, inProgressGroups int
-
-	// Get total groups
-	err := h.db.QueryRow("SELECT COUNT(*) FROM groups").Scan(&totalGroups)
+	totalGroups, completedGroups, inProgressGroups, err := h.groupService.GetStats()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get stats"})
 		return
 	}
-
-	// Get completed groups
-	err = h.db.QueryRow(`
-		SELECT COUNT(*) FROM groups WHERE completed = TRUE
-	`).Scan(&completedGroups)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get stats"})
-		return
-	}
-
-	inProgressGroups = totalGroups - completedGroups
 
 	c.JSON(http.StatusOK, gin.H{
 		"totalGroups":      totalGroups,
@@ -163,50 +133,23 @@ func (h *Handler) GetStats(c *gin.Context) {
 
 func (h *Handler) AdminLeaderboard(c *gin.Context) {
 	// Get game settings
-	var totalClues int
-	err := h.db.QueryRow(`SELECT total_clues FROM game_settings`).Scan(&totalClues)
-	if err != nil {
-		totalClues = 1
-	}
+	totalClues, _ := h.gameService.GetTotalClues()
 
-	// Get start_time (nullable)
-	var startTime sql.NullTime
-	_ = h.db.QueryRow(`SELECT start_time FROM game_settings`).Scan(&startTime)
+	settings, _ := h.gameService.GetGameStatus()
 
-	// Get groups ordered by completion status and progress
-	rows, err := h.db.Query(`
-		SELECT id, name, pathway, current_clue_idx, completed, end_time 
-		FROM groups 
-		ORDER BY completed DESC, current_clue_idx DESC, end_time ASC
-	`)
+	groupsFromDB, err := h.groupService.GetGroupsForLeaderboard()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch leaderboard"})
 		return
 	}
-	defer rows.Close()
 
 	var groups []gin.H
 	rank := 1
-	for rows.Next() {
-		var group models.Group
-		var endTime sql.NullTime
-
-		err := rows.Scan(
-			&group.ID, &group.Name, &group.Pathway, &group.CurrentClueIdx,
-			&group.Completed, &endTime,
-		)
-		if err != nil {
-			continue
-		}
-
-		if endTime.Valid {
-			group.EndTime = &endTime.Time
-		}
-
+	for _, group := range groupsFromDB {
 		// Calculate total time if completed
 		var totalTime string
-		if group.Completed && group.EndTime != nil {
-			duration := group.EndTime.Sub(startTime.Time)
+		if group.Completed && group.EndTime != nil && settings.StartTime != nil {
+			duration := group.EndTime.Sub(*settings.StartTime)
 			hours := int(duration.Hours())
 			minutes := int(duration.Minutes()) % 60
 			seconds := int(duration.Seconds()) % 60

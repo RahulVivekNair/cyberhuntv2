@@ -16,7 +16,7 @@ func main() {
 	flag.Parse()
 
 	// Initialize database
-	db, err := database.InitDB("data/cyberhunt.db?_journal=WAL&_timeout=5000&_fk=true")
+	db, err := database.InitDB("postgres://game:secret@localhost:5432/cyberhunt?sslmode=disable")
 	if err != nil {
 		log.Fatal("Failed to initialize database:", err)
 	}

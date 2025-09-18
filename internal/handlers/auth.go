@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"cyberhunt/internal/models"
+	"cyberhunt/internal/services"
 	"database/sql"
 	"net/http"
 	"strings"
@@ -12,14 +12,20 @@ import (
 )
 
 type Handler struct {
-	db        *sql.DB
-	jwtSecret string
+	groupService *services.GroupService
+	gameService  *services.GameService
+	clueService  *services.ClueService
+	adminService *services.AdminService
+	jwtSecret    string
 }
 
 func NewHandler(db *sql.DB) *Handler {
 	return &Handler{
-		db:        db,
-		jwtSecret: "05f3b711c3722735c25ddc7587cb9cb2", // Change this in production
+		groupService: services.NewGroupService(db),
+		gameService:  services.NewGameService(db),
+		clueService:  services.NewClueService(db),
+		adminService: services.NewAdminService(db),
+		jwtSecret:    "05f3b711c3722735c25ddc7587cb9cb2", // Change this in production
 	}
 }
 
@@ -31,15 +37,7 @@ func (h *Handler) Login(c *gin.Context) {
 	name := c.PostForm("name")
 	password := c.PostForm("password")
 
-	var group models.Group
-	err := h.db.QueryRow(`
-		SELECT id, name, pathway, current_clue_idx, completed, end_time, password
-		FROM groups WHERE name = ? AND password = ?
-	`, name, password).Scan(
-		&group.ID, &group.Name, &group.Pathway, &group.CurrentClueIdx,
-		&group.Completed, &group.EndTime, &group.Password,
-	)
-
+	group, err := h.groupService.GetGroupByNameAndPassword(name, password)
 	if err != nil {
 		c.HTML(http.StatusUnauthorized, "login.html", gin.H{"error": "Invalid login!"})
 		return
@@ -109,11 +107,7 @@ func (h *Handler) AdminLogin(c *gin.Context) {
 	name := c.PostForm("name")
 	password := c.PostForm("password")
 
-	var admin models.Admin
-	err := h.db.QueryRow(`
-		SELECT id, name, password FROM admins WHERE name = ? AND password = ?
-	`, name, password).Scan(&admin.ID, &admin.Name, &admin.Password)
-
+	admin, err := h.adminService.GetAdminByNameAndPassword(name, password)
 	if err != nil {
 		c.HTML(http.StatusUnauthorized, "adminLogin.html", gin.H{"error": "Invalid login!"})
 		return

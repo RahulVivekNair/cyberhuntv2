@@ -3,11 +3,11 @@ package database
 import (
 	"database/sql"
 
-	_ "modernc.org/sqlite"
+	_ "github.com/lib/pq"
 )
 
-func InitDB(dbPath string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite", dbPath)
+func InitDB(connStr string) (*sql.DB, error) {
+	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, err
 	}
@@ -28,18 +28,18 @@ func InitDB(dbPath string) (*sql.DB, error) {
 const (
 	createGroupsTable = `
 	CREATE TABLE IF NOT EXISTS groups (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		id SERIAL PRIMARY KEY,
 		name TEXT UNIQUE NOT NULL,
 		pathway TEXT NOT NULL,
-		current_clue_idx INTEGER DEFAULT 0,
-		completed BOOLEAN DEFAULT FALSE,
-		end_time DATETIME,
+		current_clue_idx INTEGER NOT NULL DEFAULT 0,
+		completed BOOLEAN NOT NULL DEFAULT FALSE,
+		end_time TIMESTAMPTZ,
 		password TEXT NOT NULL
 	);`
 
 	createCluesTable = `
 	CREATE TABLE IF NOT EXISTS clues (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		id SERIAL PRIMARY KEY,
 		pathway TEXT NOT NULL,
 		index_num INTEGER NOT NULL,
 		content TEXT NOT NULL,
@@ -49,16 +49,16 @@ const (
 
 	createGameSettingsTable = `
 	CREATE TABLE IF NOT EXISTS game_settings (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		id SERIAL PRIMARY KEY,
 		total_clues INTEGER DEFAULT 1,
-		start_time DATETIME,
+		start_time TIMESTAMPTZ,
 		game_started BOOLEAN DEFAULT FALSE,
 		game_ended BOOLEAN DEFAULT FALSE
 	);`
 
 	createAdminsTable = `
 	CREATE TABLE IF NOT EXISTS admins (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		id SERIAL PRIMARY KEY,
 		name TEXT UNIQUE NOT NULL,
 		password TEXT NOT NULL
 	);`
@@ -88,7 +88,7 @@ func ensureDefaultAdmin(db *sql.DB) error {
 	if count > 0 {
 		return nil
 	}
-	_, err := db.Exec(`INSERT INTO admins (name, password) VALUES (?, ?)`, "admin", "admin")
+	_, err := db.Exec(`INSERT INTO admins (name, password) VALUES ($1, $2)`, "admin", "admin")
 	return err
 }
 
@@ -100,6 +100,6 @@ func ensureDefaultGameSettings(db *sql.DB) error {
 	if count > 0 {
 		return nil
 	}
-	_, err := db.Exec(`INSERT INTO game_settings (total_clues) VALUES (?)`, 1)
+	_, err := db.Exec(`INSERT INTO game_settings (total_clues) VALUES ($1)`, 1)
 	return err
 }
