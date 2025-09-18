@@ -61,6 +61,7 @@ func main() {
 	r.GET("/seed", h.AdminAuthMiddleware(), h.SeedPage)
 	r.POST("/api/seed/groups", h.AdminAuthMiddleware(), h.SeedGroups)
 	r.POST("/api/seed/clues", h.AdminAuthMiddleware(), h.SeedClues)
+	r.POST("/api/seed/total_clues", h.AdminAuthMiddleware(), h.UpdateTotalClues)
 
 	// Start server
 	log.Println("Server starting on", *addr)

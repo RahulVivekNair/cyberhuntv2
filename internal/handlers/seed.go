@@ -108,3 +108,27 @@ func (h *Handler) SeedClues(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Clues seeded successfully!"})
 }
+
+func (h *Handler) UpdateTotalClues(c *gin.Context) {
+	var request struct {
+		TotalClues int `json:"total_clues"`
+	}
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	if request.TotalClues <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Total clues must be greater than 0"})
+		return
+	}
+
+	err := h.adminService.UpdateTotalClues(request.TotalClues)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update total clues"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Total clues updated successfully!"})
+}

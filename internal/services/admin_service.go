@@ -23,3 +23,30 @@ func (s *AdminService) GetAdminByNameAndPassword(name, password string) (*models
 	}
 	return &admin, nil
 }
+
+func (s *AdminService) UpdateTotalClues(totalClues int) error {
+	// Update existing settings, or insert if not exists
+	result, err := s.db.Exec(`
+		UPDATE game_settings SET total_clues = $1 WHERE id = 1
+	`, totalClues)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	// If no rows affected, insert new settings
+	if rowsAffected == 0 {
+		_, err = s.db.Exec(`
+			INSERT INTO game_settings (id, total_clues, game_started, game_ended) VALUES (1, $1, false, false)
+		`, totalClues)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

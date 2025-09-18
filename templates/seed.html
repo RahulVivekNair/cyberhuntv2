@@ -30,6 +30,20 @@
           </button>
         </div>
 
+        <!-- Update Total Clues Form -->
+        <div class="mt-8">
+          <h2 class="text-2xl font-bold text-center mb-4 text-primary">Update Game Settings</h2>
+          <div class="form-control w-full max-w-xs mx-auto">
+            <label class="label"><span class="label-text">Total Clues</span></label>
+            <input type="number" id="totalCluesInput" class="input input-bordered input-primary" placeholder="Enter total clues" required min="1" />
+          </div>
+          <div class="text-center mt-4">
+            <button id="updateTotalCluesBtn" class="btn btn-accent btn-lg">
+              Update Total Clues
+            </button>
+          </div>
+        </div>
+
         <!-- Status Messages -->
         <div id="statusMessages" class="mt-6"></div>
       </div>
@@ -97,6 +111,42 @@
       } catch (err) {
         console.error(err);
         showStatus("Failed to seed clues: " + err.message, "error");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    });
+
+    // Update Total Clues
+    document.getElementById("updateTotalCluesBtn").addEventListener("click", async () => {
+      const input = document.getElementById("totalCluesInput");
+      const totalClues = parseInt(input.value);
+      if (!totalClues || totalClues < 1) {
+        showStatus("Please enter a valid number for total clues", "error");
+        return;
+      }
+
+      const btn = document.getElementById("updateTotalCluesBtn");
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = "Updating...";
+
+      try {
+        const response = await fetch("/api/seed/total_clues", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ total_clues: totalClues })
+        });
+        const data = await response.json();
+        if (response.ok) {
+          showStatus("Total clues updated successfully!", "success");
+          input.value = "";
+        } else {
+          showStatus("Failed to update total clues: " + data.error, "error");
+        }
+      } catch (err) {
+        console.error(err);
+        showStatus("Failed to update total clues: " + err.message, "error");
       } finally {
         btn.disabled = false;
         btn.textContent = originalText;
