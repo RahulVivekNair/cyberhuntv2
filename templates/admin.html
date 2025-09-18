@@ -127,7 +127,7 @@
             </div>
           </div>
           <div class="overflow-x-auto">
-            <table class="table w-full table-zebra">
+            <table class="table w-full">
               <thead>
                 <tr class="bg-primary/10">
                   <th class="text-sm md:text-base">Rank</th>
@@ -519,11 +519,17 @@
 
         const tbody = document.getElementById("leaderboard");
 
-        tbody.innerHTML = leaderboard.groups.map(g => {
+        tbody.innerHTML = leaderboard.groups.map((g, index) => {
           const progressPercent = Math.round((g.current_clue_idx / leaderboard.totalClues) * 100);
+          let rowClass = '';
+          if (g.completed) {
+            rowClass = 'bg-success/10';
+          } else if (index % 2 === 1) {
+            rowClass = 'bg-base-200/50'; // zebra striping for non-completed rows
+          }
 
           return `
-            <tr class="${g.completed ? 'bg-success/10' : ''}">
+            <tr class="${rowClass}">
               <td class="whitespace-nowrap text-sm md:text-base font-bold">${g.rank} ${g.badge || ''}</td>
               <td class="text-sm md:text-base font-medium">${g.name}</td>
               <td class="text-sm md:text-base">
