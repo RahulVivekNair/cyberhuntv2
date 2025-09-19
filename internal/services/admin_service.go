@@ -16,8 +16,8 @@ func NewAdminService(db *sql.DB) *AdminService {
 func (s *AdminService) GetAdminByNameAndPassword(name, password string) (*models.Admin, error) {
 	var admin models.Admin
 	err := s.db.QueryRow(`
-		SELECT id, name, password FROM admins WHERE name = $1 AND password = $2
-	`, name, password).Scan(&admin.ID, &admin.Name, &admin.Password)
+		SELECT id FROM admins WHERE name = $1 AND password = $2
+	`, name, password).Scan(&admin.ID)
 	if err != nil {
 		return nil, err
 	}

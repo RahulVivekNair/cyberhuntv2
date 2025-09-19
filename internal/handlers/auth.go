@@ -39,12 +39,6 @@ func (h *Handler) Login(c *gin.Context) {
 	c.Redirect(http.StatusFound, "/game")
 }
 
-func (h *Handler) Logout(c *gin.Context) {
-	c.SetCookie("auth", "", -1, "/", "", false, true)
-	c.SetCookie("adminAuth", "", -1, "/", "", false, true)
-	c.Redirect(http.StatusFound, "/login")
-}
-
 func (h *Handler) AdminLoginPage(c *gin.Context) {
 	c.HTML(http.StatusOK, "adminLogin.html", nil)
 }
@@ -75,4 +69,10 @@ func (h *Handler) AdminLogin(c *gin.Context) {
 	// Set cookie
 	c.SetCookie("adminAuth", tokenString, 3600*24, "/", "", false, true)
 	c.Redirect(http.StatusFound, "/admin")
+}
+
+func (h *Handler) Logout(c *gin.Context) {
+	c.SetCookie("auth", "", -1, "/", "", false, true)
+	c.SetCookie("adminAuth", "", -1, "/", "", false, true)
+	c.Redirect(http.StatusFound, "/login")
 }

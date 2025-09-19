@@ -31,7 +31,5 @@ type GameSettings struct {
 }
 
 type Admin struct {
-	ID       int
-	Name     string
-	Password string
+	ID int
 }

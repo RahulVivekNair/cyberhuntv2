@@ -19,11 +19,7 @@ func (m *Middleware) AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString, err := c.Cookie("auth")
 		if err != nil {
-			if strings.HasPrefix(c.Request.URL.Path, "/api/") {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-			} else {
-				c.Redirect(http.StatusFound, "/login")
-			}
+			unauthorized(c, "/login")
 			c.Abort()
 			return
 		}
@@ -36,11 +32,7 @@ func (m *Middleware) AuthMiddleware() gin.HandlerFunc {
 		})
 
 		if err != nil || !token.Valid {
-			if strings.HasPrefix(c.Request.URL.Path, "/api/") {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-			} else {
-				c.Redirect(http.StatusFound, "/login")
-			}
+			unauthorized(c, "/login")
 			c.Abort()
 			return
 		}
@@ -68,11 +60,7 @@ func (m *Middleware) AdminAuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString, err := c.Cookie("adminAuth")
 		if err != nil {
-			if strings.HasPrefix(c.Request.URL.Path, "/api/") {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-			} else {
-				c.Redirect(http.StatusFound, "/adminlogin")
-			}
+			unauthorized(c, "/adminlogin")
 			c.Abort()
 			return
 		}
@@ -100,11 +88,7 @@ func (m *Middleware) AdminAuthMiddleware() gin.HandlerFunc {
 			// Check if user is admin
 			isAdmin, ok := claims["isAdmin"].(bool)
 			if !ok || !isAdmin {
-				if strings.HasPrefix(c.Request.URL.Path, "/api/") {
-					c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-				} else {
-					c.Redirect(http.StatusFound, "/adminlogin")
-				}
+				unauthorized(c, "/adminlogin")
 				c.Abort()
 				return
 			}
