@@ -5,6 +5,8 @@ import (
 	"cyberhunt/internal/models"
 	"database/sql"
 	"time"
+
+	"github.com/lib/pq"
 )
 
 type GroupService struct {
@@ -32,10 +34,19 @@ func (s *GroupService) GetGroupByNameAndPassword(ctx context.Context, name, pass
 
 func (s *GroupService) AddGroup(ctx context.Context, name, pathway, password string) error {
 	_, err := s.db.ExecContext(ctx, `
-		INSERT INTO groups (name, pathway, password)
-		VALUES ($1, $2, $3)
-	`, name, pathway, password)
-	return err
+        INSERT INTO groups (name, pathway, password)
+        VALUES ($1, $2, $3)
+    `, name, pathway, password)
+
+	if err != nil {
+		// Check for Postgres unique violation
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
+			return ErrGroupExists // <-- return the custom error
+		}
+		return err
+	}
+
+	return nil
 }
 
 func (s *GroupService) DeleteGroup(ctx context.Context, id int) error {

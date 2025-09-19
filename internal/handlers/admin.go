@@ -1,10 +1,14 @@
 package handlers
 
 import (
+	"cyberhunt/internal/services"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
+	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -64,19 +68,41 @@ func (h *Handler) AddGroup(c *gin.Context) {
 		return
 	}
 
-	// Generate password if not provided
-	password := request.Password
+	name := strings.TrimSpace(request.Name)
+	if name == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Group name is required"})
+		return
+	}
+
+	pathway := strings.ToLower(strings.TrimSpace(request.Pathway))
+	if pathway == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Pathway is required"})
+		return
+	}
+
+	validPathways := []string{"red", "blue", "green", "yellow"}
+	if !slices.Contains(validPathways, pathway) {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": fmt.Sprintf("Invalid pathway. Must be one of: %s", strings.Join(validPathways, ", ")),
+		})
+		return
+	}
+
+	password := strings.TrimSpace(request.Password)
 	if password == "" {
 		password = generateRandomPassword(6)
 	}
 
-	err := h.groupService.AddGroup(c.Request.Context(), request.Name, request.Pathway, password)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add group"})
+	if err := h.groupService.AddGroup(c.Request.Context(), name, pathway, password); err != nil {
+		if errors.Is(err, services.ErrGroupExists) { // <-- check using errors.Is
+			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add group"})
+		}
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	c.JSON(http.StatusCreated, gin.H{
 		"message":  "Group added successfully!",
 		"password": password,
 	})
