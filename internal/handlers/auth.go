@@ -19,13 +19,13 @@ type Handler struct {
 	jwtSecret    string
 }
 
-func NewHandler(db *sql.DB) *Handler {
+func NewHandler(db *sql.DB, jwtSecret string) *Handler {
 	return &Handler{
 		groupService: services.NewGroupService(db),
 		gameService:  services.NewGameService(db),
 		clueService:  services.NewClueService(db),
 		adminService: services.NewAdminService(db),
-		jwtSecret:    "05f3b711c3722735c25ddc7587cb9cb2", // Change this in production
+		jwtSecret:    jwtSecret, // Change this in production
 	}
 }
 

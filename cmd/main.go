@@ -1,29 +1,47 @@
 package main
 
 import (
+	"cyberhunt/internal/database"
+	"cyberhunt/internal/handlers"
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 
-	"cyberhunt/internal/database"
-	"cyberhunt/internal/handlers"
-
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func main() {
 	var addr = flag.String("addr", ":8080", "Address and port to run the server")
 	flag.Parse()
 
+	myEnv, err := godotenv.Read()
+	if err != nil {
+		log.Panic("No .env file found")
+	}
+
+	pgUser := myEnv["POSTGRES_USER"]
+	pgPassword := myEnv["POSTGRES_PASSWORD"]
+	pgHost := myEnv["POSTGRES_HOST"]
+	pgPort := myEnv["POSTGRES_PORT"]
+	pgDB := myEnv["POSTGRES_DB"]
+
+	dbURL := fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		pgUser, pgPassword, pgHost, pgPort, pgDB,
+	)
 	// Initialize database
-	db, err := database.InitDB("postgres://game:secret@localhost:5432/cyberhunt?sslmode=disable")
+	db, err := database.InitDB(dbURL)
 	if err != nil {
 		log.Fatal("Failed to initialize database:", err)
 	}
 	defer db.Close()
 
+	jwtSecret := myEnv["JWT_SECRET"]
+
 	// Initialize handlers
-	h := handlers.NewHandler(db)
+	h := handlers.NewHandler(db, jwtSecret)
 
 	// Setup router
 	r := gin.Default()
