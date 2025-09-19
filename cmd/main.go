@@ -39,11 +39,11 @@ func main() {
 	// Initialize handlers
 	jwtSecret := myEnv["JWT_SECRET"]
 	h := handlers.NewHandler(db, jwtSecret)
-	r := SetupRoutes(h)
+	router := SetupRoutes(h, jwtSecret)
 
 	// Start server
 	log.Println("Server starting on", *addr)
-	if err := r.Run(*addr); err != nil {
+	if err := router.Run(*addr); err != nil {
 		log.Fatal("Failed to start server:", err)
 	}
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRoutes(h *handlers.Handler) *gin.Engine {
+func SetupRoutes(h *handlers.Handler, jwtSecret string) *gin.Engine {
 	// Setup router
 	r := gin.Default()
 
@@ -15,42 +15,45 @@ func SetupRoutes(h *handlers.Handler) *gin.Engine {
 	r.LoadHTMLGlob("templates/*")
 
 	// Static files
-
+	r.Static("/static", "static/")
 	// Routes
 
+	//init authjwt
+	m := Middleware{JWTSecret: jwtSecret}
 	// Public Routes
 	r.GET("/", func(c *gin.Context) {
 		c.Redirect(http.StatusFound, "/login")
 	})
 
+	//Public User and Admin Routes
 	r.GET("/login", h.LoginPage)
 	r.POST("/login", h.Login)
-
-	// User Routes (require authentication)
-	r.GET("/game", h.AuthMiddleware(), h.GamePage)
-	r.POST("/api/scan", h.AuthMiddleware(), h.ScanQR)
-	r.GET("/leaderboard", h.AuthMiddleware(), h.LeaderboardPage)
-
-	// Admin Routes
-	r.GET("/admin", h.AdminAuthMiddleware(), h.AdminPage)
 	r.GET("/adminlogin", h.AdminLoginPage)
 	r.POST("/adminlogin", h.AdminLogin)
-	r.POST("/api/admin/start", h.AdminAuthMiddleware(), h.StartGame)
-	r.POST("/api/admin/end", h.AdminAuthMiddleware(), h.EndGame)
-	r.POST("/api/admin/clear", h.AdminAuthMiddleware(), h.ClearState)
-	r.POST("/api/admin/group", h.AdminAuthMiddleware(), h.AddGroup)
-	r.DELETE("/api/admin/group/:id", h.AdminAuthMiddleware(), h.DeleteGroup)
-	r.GET("/api/admin/status", h.AdminAuthMiddleware(), h.GetGameStatus)
-	r.GET("/api/admin/stats", h.AdminAuthMiddleware(), h.GetStats)
-	r.GET("/api/admin/leaderboard", h.AdminAuthMiddleware(), h.AdminLeaderboard)
 	r.POST("/logout", h.Logout)
-	r.GET("/api/leaderboard", h.AuthMiddleware(), h.GetLeaderboard)
+
+	// User Routes (require authentication)
+	r.GET("/game", m.AuthMiddleware(), h.GamePage)
+	r.GET("/leaderboard", m.AuthMiddleware(), h.LeaderboardPage)
+	r.GET("/api/leaderboard", m.AuthMiddleware(), h.GetLeaderboard)
+	r.POST("/api/scan", m.AuthMiddleware(), h.ScanQR)
+
+	// Admin Routes
+	r.GET("/admin", m.AdminAuthMiddleware(), h.AdminPage)
+	r.POST("/api/admin/start", m.AdminAuthMiddleware(), h.StartGame)
+	r.POST("/api/admin/end", m.AdminAuthMiddleware(), h.EndGame)
+	r.POST("/api/admin/clear", m.AdminAuthMiddleware(), h.ClearState)
+	r.POST("/api/admin/group", m.AdminAuthMiddleware(), h.AddGroup)
+	r.DELETE("/api/admin/group/:id", m.AdminAuthMiddleware(), h.DeleteGroup)
+	r.GET("/api/admin/status", m.AdminAuthMiddleware(), h.GetGameStatus)
+	r.GET("/api/admin/stats", m.AdminAuthMiddleware(), h.GetStats)
+	r.GET("/api/admin/leaderboard", m.AdminAuthMiddleware(), h.AdminLeaderboard)
 
 	// Seed routes
-	r.GET("/seed", h.AdminAuthMiddleware(), h.SeedPage)
-	r.POST("/api/seed/groups", h.AdminAuthMiddleware(), h.SeedGroups)
-	r.POST("/api/seed/clues", h.AdminAuthMiddleware(), h.SeedClues)
-	r.POST("/api/seed/total_clues", h.AdminAuthMiddleware(), h.UpdateTotalClues)
+	r.GET("/seed", m.AdminAuthMiddleware(), h.SeedPage)
+	r.POST("/api/seed/groups", m.AdminAuthMiddleware(), h.SeedGroups)
+	r.POST("/api/seed/clues", m.AdminAuthMiddleware(), h.SeedClues)
+	r.POST("/api/seed/total_clues", m.AdminAuthMiddleware(), h.UpdateTotalClues)
 
 	return r
 }
