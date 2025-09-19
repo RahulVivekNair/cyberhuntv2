@@ -74,5 +74,4 @@ func (h *Handler) AdminLogin(c *gin.Context) {
 func (h *Handler) Logout(c *gin.Context) {
 	c.SetCookie("auth", "", -1, "/", "", false, true)
 	c.SetCookie("adminAuth", "", -1, "/", "", false, true)
-	c.Redirect(http.StatusFound, "/login")
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"net/http"
-	"strings"
 
 	"fmt"
 
@@ -74,12 +73,7 @@ func (m *Middleware) AdminAuthMiddleware() gin.HandlerFunc {
 		})
 
 		if err != nil || !token.Valid {
-			if strings.HasPrefix(c.Request.URL.Path, "/api/") {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-			} else {
-				c.Redirect(http.StatusFound, "/adminlogin")
-			}
-			c.Abort()
+			unauthorized(c, "/adminlogin")
 			return
 		}
 
