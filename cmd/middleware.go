@@ -59,7 +59,7 @@ func (m *Middleware) AdminAuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString, err := c.Cookie("adminAuth")
 		if err != nil {
-			unauthorized(c, "/adminlogin")
+			unauthorized(c, "/admin/login")
 			c.Abort()
 			return
 		}
@@ -73,7 +73,7 @@ func (m *Middleware) AdminAuthMiddleware() gin.HandlerFunc {
 		})
 
 		if err != nil || !token.Valid {
-			unauthorized(c, "/adminlogin")
+			unauthorized(c, "/admin/login")
 			return
 		}
 
@@ -82,7 +82,7 @@ func (m *Middleware) AdminAuthMiddleware() gin.HandlerFunc {
 			// Check if user is admin
 			isAdmin, ok := claims["isAdmin"].(bool)
 			if !ok || !isAdmin {
-				unauthorized(c, "/adminlogin")
+				unauthorized(c, "/admin/login")
 				c.Abort()
 				return
 			}

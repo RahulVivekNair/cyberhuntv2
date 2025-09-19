@@ -31,8 +31,8 @@ func SetupRoutes(h *handlers.Handler, jwtSecret string) *gin.Engine {
 	//Public User and Admin Routes
 	r.GET("/login", h.LoginPage)
 	r.POST("/login", h.Login)
-	r.GET("/adminlogin", h.AdminLoginPage)
-	r.POST("adminlogin", h.AdminLogin)
+	r.GET("/admin/login", h.AdminLoginPage)
+	r.POST("/admin/login", h.AdminLogin)
 	r.POST("/logout", h.Logout)
 
 	// User Routes (require authentication)
@@ -57,6 +57,10 @@ func SetupRoutes(h *handlers.Handler, jwtSecret string) *gin.Engine {
 	r.POST("/api/seed/groups", m.AdminAuthMiddleware(), h.SeedGroups)
 	r.POST("/api/seed/clues", m.AdminAuthMiddleware(), h.SeedClues)
 	r.POST("/api/seed/total_clues", m.AdminAuthMiddleware(), h.UpdateTotalClues)
+
+	r.NoRoute(func(c *gin.Context) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+	})
 
 	return r
 }
