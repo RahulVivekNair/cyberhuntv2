@@ -15,7 +15,7 @@ func (h *Handler) AdminPage(c *gin.Context) {
 }
 
 func (h *Handler) StartGame(c *gin.Context) {
-	err := h.gameService.StartGame()
+	err := h.gameService.StartGame(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start game"})
 		return
@@ -25,7 +25,7 @@ func (h *Handler) StartGame(c *gin.Context) {
 }
 
 func (h *Handler) EndGame(c *gin.Context) {
-	err := h.gameService.EndGame()
+	err := h.gameService.EndGame(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to end game"})
 		return
@@ -36,14 +36,14 @@ func (h *Handler) EndGame(c *gin.Context) {
 
 func (h *Handler) ClearState(c *gin.Context) {
 	// Reset game settings
-	err := h.gameService.ClearState()
+	err := h.gameService.ClearState(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to clear game state"})
 		return
 	}
 
 	// Reset all groups
-	err = h.groupService.ResetGroups()
+	err = h.groupService.ResetGroups(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reset groups"})
 		return
@@ -70,7 +70,7 @@ func (h *Handler) AddGroup(c *gin.Context) {
 		password = generateRandomPassword(6)
 	}
 
-	err := h.groupService.AddGroup(request.Name, request.Pathway, password)
+	err := h.groupService.AddGroup(c.Request.Context(), request.Name, request.Pathway, password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add group"})
 		return
@@ -90,7 +90,7 @@ func (h *Handler) DeleteGroup(c *gin.Context) {
 		return
 	}
 
-	err = h.groupService.DeleteGroup(groupID)
+	err = h.groupService.DeleteGroup(c.Request.Context(), groupID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete group"})
 		return
@@ -100,7 +100,7 @@ func (h *Handler) DeleteGroup(c *gin.Context) {
 }
 
 func (h *Handler) GetGameStatus(c *gin.Context) {
-	settings, err := h.gameService.GetGameStatus()
+	settings, err := h.gameService.GetGameStatus(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get game status"})
 		return
@@ -118,7 +118,7 @@ func (h *Handler) GetGameStatus(c *gin.Context) {
 }
 
 func (h *Handler) GetStats(c *gin.Context) {
-	totalGroups, completedGroups, inProgressGroups, err := h.groupService.GetStats()
+	totalGroups, completedGroups, inProgressGroups, err := h.groupService.GetStats(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get stats"})
 		return
@@ -133,11 +133,11 @@ func (h *Handler) GetStats(c *gin.Context) {
 
 func (h *Handler) AdminLeaderboard(c *gin.Context) {
 	// Get game settings
-	totalClues, _ := h.gameService.GetTotalClues()
+	totalClues, _ := h.gameService.GetTotalClues(c.Request.Context())
 
-	settings, _ := h.gameService.GetGameStatus()
+	settings, _ := h.gameService.GetGameStatus(c.Request.Context())
 
-	groupsFromDB, err := h.groupService.GetGroupsForLeaderboard()
+	groupsFromDB, err := h.groupService.GetGroupsForLeaderboard(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch leaderboard"})
 		return
@@ -163,11 +163,12 @@ func (h *Handler) AdminLeaderboard(c *gin.Context) {
 
 		// Add rank badge (matching user-facing leaderboard)
 		var badge string
-		if rank == 1 {
+		switch rank {
+		case 1:
 			badge = "🥇"
-		} else if rank == 2 {
+		case 2:
 			badge = "🥈"
-		} else if rank == 3 {
+		case 3:
 			badge = "🥉"
 		}
 

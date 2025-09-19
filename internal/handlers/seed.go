@@ -28,7 +28,7 @@ func (h *Handler) SeedGroups(c *gin.Context) {
 			name := fmt.Sprintf("Group_%s_%03d", pathway, i+1)
 			password := "test"
 
-			err := h.groupService.AddGroup(name, pathway, password)
+			err := h.groupService.AddGroup(c.Request.Context(), name, pathway, password)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to seed groups"})
 				return
@@ -87,7 +87,7 @@ func (h *Handler) SeedClues(c *gin.Context) {
 	}
 
 	// Clear existing clues
-	err := h.clueService.ClearClues()
+	err := h.clueService.ClearClues(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to clear existing clues"})
 		return
@@ -98,7 +98,7 @@ func (h *Handler) SeedClues(c *gin.Context) {
 			qrCode := fmt.Sprintf("%s_%03d", pathway, i)
 			content := riddles[rand.Intn(len(riddles))]
 
-			err := h.clueService.AddClue(pathway, i, content, qrCode)
+			err := h.clueService.AddClue(c.Request.Context(), pathway, i, content, qrCode)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to insert clue %s_%03d: %v", pathway, i, err)})
 				return
@@ -124,7 +124,7 @@ func (h *Handler) UpdateTotalClues(c *gin.Context) {
 		return
 	}
 
-	err := h.adminService.UpdateTotalClues(request.TotalClues)
+	err := h.adminService.UpdateTotalClues(c.Request.Context(), request.TotalClues)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update total clues"})
 		return

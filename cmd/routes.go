@@ -4,6 +4,7 @@ import (
 	"cyberhunt/internal/handlers"
 	"net/http"
 
+	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 )
 
@@ -11,6 +12,8 @@ func SetupRoutes(h *handlers.Handler, jwtSecret string) *gin.Engine {
 	// Setup router
 	r := gin.Default()
 
+	//use gzip encoding
+	r.Use(gzip.Gzip(gzip.DefaultCompression))
 	// Load templates from embedded files
 	r.LoadHTMLGlob("templates/*")
 

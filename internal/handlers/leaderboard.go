@@ -13,11 +13,11 @@ func (h *Handler) LeaderboardPage(c *gin.Context) {
 
 func (h *Handler) GetLeaderboard(c *gin.Context) {
 	// Get total_clues
-	totalClues, _ := h.gameService.GetTotalClues()
+	totalClues, _ := h.gameService.GetTotalClues(c.Request.Context())
 
-	settings, _ := h.gameService.GetGameStatus()
+	settings, _ := h.gameService.GetGameStatus(c.Request.Context())
 
-	groupsFromDB, err := h.groupService.GetGroupsForLeaderboard()
+	groupsFromDB, err := h.groupService.GetGroupsForLeaderboard(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch leaderboard"})
 		return
@@ -43,11 +43,12 @@ func (h *Handler) GetLeaderboard(c *gin.Context) {
 
 		// Add rank badge
 		var badge string
-		if rank == 1 {
+		switch rank {
+		case 1:
 			badge = "🥇"
-		} else if rank == 2 {
+		case 2:
 			badge = "🥈"
-		} else if rank == 3 {
+		case 3:
 			badge = "🥉"
 		}
 

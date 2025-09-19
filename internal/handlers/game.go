@@ -10,19 +10,19 @@ import (
 func (h *Handler) GamePage(c *gin.Context) {
 	groupID, _ := c.Get("groupID")
 
-	group, err := h.groupService.GetGroupByID(groupID.(int))
+	group, err := h.groupService.GetGroupByID(c.Request.Context(), groupID.(int))
 	if err != nil {
 		c.Redirect(http.StatusFound, "/login")
 		return
 	}
 
 	// Get total clues
-	totalClues, _ := h.gameService.GetTotalClues()
+	totalClues, _ := h.gameService.GetTotalClues(c.Request.Context())
 
 	// Get current clue if not completed
 	var clueContent string
 	if !group.Completed {
-		clue, err := h.clueService.GetClueByPathwayAndIndex(group.Pathway, group.CurrentClueIdx)
+		clue, err := h.clueService.GetClueByPathwayAndIndex(c.Request.Context(), group.Pathway, group.CurrentClueIdx)
 		if err != nil {
 			clueContent = "No clue found!"
 		} else {
@@ -42,7 +42,7 @@ func (h *Handler) GamePage(c *gin.Context) {
 func (h *Handler) ScanQR(c *gin.Context) {
 	groupID, _ := c.Get("groupID")
 
-	group, err := h.groupService.GetGroupByID(groupID.(int))
+	group, err := h.groupService.GetGroupByID(c.Request.Context(), groupID.(int))
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Group not found"})
 		return
@@ -63,7 +63,7 @@ func (h *Handler) ScanQR(c *gin.Context) {
 	}
 
 	// Get expected QR code for current clue
-	expectedClue, err := h.clueService.GetClueByPathwayAndIndex(group.Pathway, group.CurrentClueIdx)
+	expectedClue, err := h.clueService.GetClueByPathwayAndIndex(c.Request.Context(), group.Pathway, group.CurrentClueIdx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Clue not found"})
 		return
@@ -76,7 +76,7 @@ func (h *Handler) ScanQR(c *gin.Context) {
 	}
 
 	// Get total clues
-	totalClues, _ := h.gameService.GetTotalClues()
+	totalClues, _ := h.gameService.GetTotalClues(c.Request.Context())
 
 	// Update group progress
 	newClueIdx := group.CurrentClueIdx + 1
@@ -88,7 +88,7 @@ func (h *Handler) ScanQR(c *gin.Context) {
 		endTime = &t
 	}
 
-	err = h.groupService.UpdateGroupProgress(groupID.(int), newClueIdx, completed, endTime)
+	err = h.groupService.UpdateGroupProgress(c.Request.Context(), groupID.(int), newClueIdx, completed, endTime)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update progress"})
 		return

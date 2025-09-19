@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"cyberhunt/internal/models"
 	"database/sql"
 	"time"
@@ -14,37 +15,9 @@ func NewGroupService(db *sql.DB) *GroupService {
 	return &GroupService{db: db}
 }
 
-func (s *GroupService) AddGroup(name, pathway, password string) error {
-	_, err := s.db.Exec(`
-		INSERT INTO groups (name, pathway, password)
-		VALUES ($1, $2, $3)
-	`, name, pathway, password)
-	return err
-}
-
-func (s *GroupService) DeleteGroup(id int) error {
-	_, err := s.db.Exec("DELETE FROM groups WHERE id = $1", id)
-	return err
-}
-
-func (s *GroupService) GetGroupByID(id int) (*models.Group, error) {
+func (s *GroupService) GetGroupByNameAndPassword(ctx context.Context, name, password string) (*models.Group, error) {
 	var group models.Group
-	err := s.db.QueryRow(`
-		SELECT id, name, pathway, current_clue_idx, completed, end_time
-		FROM groups WHERE id = $1
-	`, id).Scan(
-		&group.ID, &group.Name, &group.Pathway, &group.CurrentClueIdx,
-		&group.Completed, &group.EndTime,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return &group, nil
-}
-
-func (s *GroupService) GetGroupByNameAndPassword(name, password string) (*models.Group, error) {
-	var group models.Group
-	err := s.db.QueryRow(`
+	err := s.db.QueryRowContext(ctx, `
 		SELECT id, name, pathway, current_clue_idx, completed, end_time, password
 		FROM groups WHERE name = $1 AND password = $2
 	`, name, password).Scan(
@@ -57,8 +30,36 @@ func (s *GroupService) GetGroupByNameAndPassword(name, password string) (*models
 	return &group, nil
 }
 
-func (s *GroupService) UpdateGroupProgress(id, newClueIdx int, completed bool, endTime *time.Time) error {
-	_, err := s.db.Exec(`
+func (s *GroupService) AddGroup(ctx context.Context, name, pathway, password string) error {
+	_, err := s.db.ExecContext(ctx, `
+		INSERT INTO groups (name, pathway, password)
+		VALUES ($1, $2, $3)
+	`, name, pathway, password)
+	return err
+}
+
+func (s *GroupService) DeleteGroup(ctx context.Context, id int) error {
+	_, err := s.db.ExecContext(ctx, "DELETE FROM groups WHERE id = $1", id)
+	return err
+}
+
+func (s *GroupService) GetGroupByID(ctx context.Context, id int) (*models.Group, error) {
+	var group models.Group
+	err := s.db.QueryRowContext(ctx, `
+		SELECT id, name, pathway, current_clue_idx, completed, end_time
+		FROM groups WHERE id = $1
+	`, id).Scan(
+		&group.ID, &group.Name, &group.Pathway, &group.CurrentClueIdx,
+		&group.Completed, &group.EndTime,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &group, nil
+}
+
+func (s *GroupService) UpdateGroupProgress(ctx context.Context, id, newClueIdx int, completed bool, endTime *time.Time) error {
+	_, err := s.db.ExecContext(ctx, `
 		UPDATE groups
 		SET current_clue_idx = $1, completed = $2, end_time = $3
 		WHERE id = $4
@@ -66,16 +67,16 @@ func (s *GroupService) UpdateGroupProgress(id, newClueIdx int, completed bool, e
 	return err
 }
 
-func (s *GroupService) ResetGroups() error {
-	_, err := s.db.Exec(`
+func (s *GroupService) ResetGroups(ctx context.Context) error {
+	_, err := s.db.ExecContext(ctx, `
 		UPDATE groups
 		SET current_clue_idx = 0, completed = FALSE, end_time = NULL
 	`)
 	return err
 }
 
-func (s *GroupService) GetGroupsForLeaderboard() ([]models.Group, error) {
-	rows, err := s.db.Query(`
+func (s *GroupService) GetGroupsForLeaderboard(ctx context.Context) ([]models.Group, error) {
+	rows, err := s.db.QueryContext(ctx, `
 		SELECT id, name, pathway, current_clue_idx, completed, end_time
 		FROM groups
 		ORDER BY completed DESC, current_clue_idx DESC, end_time ASC
@@ -104,15 +105,15 @@ func (s *GroupService) GetGroupsForLeaderboard() ([]models.Group, error) {
 	return groups, nil
 }
 
-func (s *GroupService) GetStats() (int, int, int, error) {
+func (s *GroupService) GetStats(ctx context.Context) (int, int, int, error) {
 	var totalGroups, completedGroups int
 
-	err := s.db.QueryRow("SELECT COUNT(*) FROM groups").Scan(&totalGroups)
+	err := s.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM groups").Scan(&totalGroups)
 	if err != nil {
 		return 0, 0, 0, err
 	}
 
-	err = s.db.QueryRow("SELECT COUNT(*) FROM groups WHERE completed = TRUE").Scan(&completedGroups)
+	err = s.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM groups WHERE completed = TRUE").Scan(&completedGroups)
 	if err != nil {
 		return 0, 0, 0, err
 	}

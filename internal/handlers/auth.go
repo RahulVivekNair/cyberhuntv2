@@ -16,7 +16,7 @@ func (h *Handler) Login(c *gin.Context) {
 	name := c.PostForm("name")
 	password := c.PostForm("password")
 
-	group, err := h.groupService.GetGroupByNameAndPassword(name, password)
+	group, err := h.groupService.GetGroupByNameAndPassword(c.Request.Context(), name, password)
 	if err != nil {
 		c.HTML(http.StatusUnauthorized, "login.html", gin.H{"error": "Invalid login!"})
 		return
@@ -47,7 +47,7 @@ func (h *Handler) AdminLogin(c *gin.Context) {
 	name := c.PostForm("name")
 	password := c.PostForm("password")
 
-	admin, err := h.adminService.GetAdminByNameAndPassword(name, password)
+	admin, err := h.adminService.GetAdminByNameAndPassword(c.Request.Context(), name, password)
 	if err != nil {
 		c.HTML(http.StatusUnauthorized, "adminLogin.html", gin.H{"error": "Invalid login!"})
 		return
