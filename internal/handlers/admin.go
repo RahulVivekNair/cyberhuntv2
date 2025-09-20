@@ -22,6 +22,10 @@ func (h *Handler) AdminPage(c *gin.Context) {
 func (h *Handler) StartGame(c *gin.Context) {
 	err := h.gameService.StartGame(c.Request.Context())
 	if err != nil {
+		if errors.Is(err, services.ErrGameAlreadyStarted) {
+			c.JSON(http.StatusConflict, gin.H{"error": "Game already started"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start game"})
 		return
 	}
@@ -32,10 +36,21 @@ func (h *Handler) StartGame(c *gin.Context) {
 func (h *Handler) EndGame(c *gin.Context) {
 	err := h.gameService.EndGame(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to end game"})
+		switch err {
+		case services.ErrGameNotStarted:
+			// Game hasn't started yet
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Game has not started yet"})
+		case services.ErrGameAlreadyEnded:
+			// Game already ended
+			c.JSON(http.StatusConflict, gin.H{"error": "Game already ended"})
+		default:
+			// Other unexpected errors
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to end game"})
+		}
 		return
 	}
 
+	// Success
 	c.JSON(http.StatusOK, gin.H{"message": "Game ended successfully!"})
 }
 

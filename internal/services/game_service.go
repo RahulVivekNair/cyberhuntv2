@@ -16,19 +16,62 @@ func NewGameService(db *sql.DB) *GameService {
 }
 
 func (s *GameService) StartGame(ctx context.Context) error {
-	startTime := time.Now().UTC()
-	_, err := s.db.ExecContext(ctx, `
+	// Try to start the game only if it hasn't already started
+	res, err := s.db.ExecContext(ctx, `
 		UPDATE game_settings
 		SET game_started = TRUE, start_time = $1
-	`, startTime)
-	return err
+		WHERE id = 1 AND game_started = FALSE
+	`, time.Now().UTC())
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return ErrGameAlreadyStarted
+	}
+
+	return nil
 }
 
 func (s *GameService) EndGame(ctx context.Context) error {
-	_, err := s.db.ExecContext(ctx, `
-		UPDATE game_settings SET game_ended = TRUE
-	`)
-	return err
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	var gameStarted, gameEnded bool
+	err = tx.QueryRowContext(ctx, `
+        SELECT game_started, game_ended 
+        FROM game_settings 
+        WHERE id = 1 
+        FOR UPDATE
+    `).Scan(&gameStarted, &gameEnded)
+
+	if err != nil {
+		return err
+	}
+
+	if !gameStarted {
+		return ErrGameNotStarted
+	}
+	if gameEnded {
+		return ErrGameAlreadyEnded
+	}
+
+	_, err = tx.ExecContext(ctx, `
+        UPDATE game_settings SET game_ended = TRUE WHERE id = 1
+    `)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (s *GameService) ClearState(ctx context.Context) error {
