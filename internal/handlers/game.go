@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"context"
-	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -42,66 +42,54 @@ func (h *Handler) GamePage(c *gin.Context) {
 }
 
 func (h *Handler) ScanQR(c *gin.Context) {
-	groupID, _ := c.Get("groupID")
-
-	group, err := h.groupService.GetGroupByID(c.Request.Context(), groupID.(int))
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Group not found"})
+	groupIDRaw, ok := c.Get("groupID")
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Group ID missing"})
+		return
+	}
+	groupID, ok := groupIDRaw.(int)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid group ID type"})
 		return
 	}
 
-	if group.Completed {
-		c.JSON(http.StatusOK, gin.H{"message": "Group already completed"})
-		return
+	var req struct {
+		Code string `json:"code" binding:"required"`
 	}
-
-	// Get scanned QR code from request
-	var request struct {
-		Code string `json:"code"`
-	}
-	if err := c.BindJSON(&request); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
 
-	// Get expected QR code for current clue
-	expectedClue, err := h.clueService.GetClueByPathwayAndIndex(c.Request.Context(), group.Pathway, group.CurrentClueIdx)
+	totalClues, err := h.gameService.GetTotalClues(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Clue not found"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch game settings"})
 		return
 	}
 
-	// Validate QR code
-	if request.Code != expectedClue.QRCode {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Wrong QR code!"})
-		return
-	}
-
-	// Get total clues
-	totalClues, _ := h.gameService.GetTotalClues(c.Request.Context())
-
-	// Update group progress
-	newClueIdx := group.CurrentClueIdx + 1
-	completed := newClueIdx >= totalClues
-
-	var endTime *time.Time
-	if completed {
-		t := time.Now().UTC()
-		endTime = &t
-	}
-
-	err = h.groupService.UpdateGroupProgress(c.Request.Context(), groupID.(int), newClueIdx, completed, endTime)
+	g, err := h.groupService.ScanAndUpdateProgress(c.Request.Context(), groupID, strings.TrimSpace(req.Code), totalClues)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update progress"})
-		return
-	}
-
-	// Broadcast updated leaderboard asynchronously so response isn't delayed.
-	go func() {
-		if err := h.BroadcastLeaderboard(context.Background()); err != nil {
-			log.Printf("broadcast leaderboard error: %v", err)
+		if strings.Contains(err.Error(), "invalid QR code") {
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Wrong QR code"})
+			return
 		}
+		if strings.Contains(err.Error(), "already completed") {
+			c.JSON(http.StatusOK, gin.H{"success": true, "message": "Group already completed"})
+			return
+		}
+		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+		return
+	}
+
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		_ = h.BroadcastLeaderboard(ctx)
 	}()
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Correct QR code!"})
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Correct QR code",
+		"group":   g, // directly return updated models.Group
+	})
 }

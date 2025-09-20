@@ -2,9 +2,11 @@ package services
 
 import (
 	"context"
+	"crypto/subtle"
 	"cyberhunt/internal/models"
 	"database/sql"
-	"time"
+	"errors"
+	"fmt"
 
 	"github.com/lib/pq"
 )
@@ -71,24 +73,51 @@ func (s *GroupService) GetGroupByID(ctx context.Context, id int) (*models.Group,
 	var group models.Group
 	err := s.db.QueryRowContext(ctx, `
 		SELECT id, name, pathway, current_clue_idx, completed, end_time
-		FROM groups WHERE id = $1
+		FROM groups
+		WHERE id = $1
 	`, id).Scan(
 		&group.ID, &group.Name, &group.Pathway, &group.CurrentClueIdx,
 		&group.Completed, &group.EndTime,
 	)
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("group %d not found", id) // clean error
+	}
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to fetch group %d: %w", id, err)
 	}
 	return &group, nil
 }
 
-func (s *GroupService) UpdateGroupProgress(ctx context.Context, id, newClueIdx int, completed bool, endTime *time.Time) error {
-	_, err := s.db.ExecContext(ctx, `
+func (s *GroupService) UpdateGroupProgress(ctx context.Context, id, expectedClueIdx int, totalClues int) error {
+	// Move to the *next* clue only if the group is still at expectedClueIdx
+	// This prevents races / duplicate scans.
+	query := `
 		UPDATE groups
-		SET current_clue_idx = $1, completed = $2, end_time = $3
-		WHERE id = $4
-	`, newClueIdx, completed, endTime, id)
-	return err
+		SET 
+			current_clue_idx = current_clue_idx + 1,
+			completed = (current_clue_idx + 1) >= $2,
+			end_time = CASE 
+				WHEN (current_clue_idx + 1) >= $2 AND end_time IS NULL 
+				THEN NOW() AT TIME ZONE 'UTC' 
+				ELSE end_time 
+			END
+		WHERE id = $1 AND current_clue_idx = $3 AND completed = FALSE
+	`
+	res, err := s.db.ExecContext(ctx, query, id, totalClues, expectedClueIdx)
+	if err != nil {
+		return fmt.Errorf("failed to update progress for group %d: %w", id, err)
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to check progress update for group %d: %w", id, err)
+	}
+	if rows == 0 {
+		// Either wrong clue index, already completed, or race condition lost
+		return errors.New("progress not updated (stale or already completed)")
+	}
+
+	return nil
 }
 
 func (s *GroupService) ResetGroups(ctx context.Context) error {
@@ -182,4 +211,79 @@ func (s *GroupService) GetLeaderboardData(ctx context.Context) (int, []models.Gr
 	}
 
 	return totalClues, groups, nil
+}
+
+// In GroupService or a new "GameService"
+func (s *GroupService) ScanAndUpdateProgress(
+	ctx context.Context,
+	groupID int,
+	scannedCode string,
+	totalClues int,
+) (*models.Group, error) {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
+	if err != nil {
+		return nil, fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }() // rollback if not committed
+
+	// 1. Lock the group row
+	var g models.Group
+	err = tx.QueryRowContext(ctx, `
+        SELECT id, name, pathway, current_clue_idx, completed, end_time
+        FROM groups
+        WHERE id = $1
+        FOR UPDATE
+    `, groupID).Scan(&g.ID, &g.Name, &g.Pathway, &g.CurrentClueIdx, &g.Completed, &g.EndTime)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("group %d not found", groupID)
+		}
+		return nil, fmt.Errorf("query group: %w", err)
+	}
+	if g.Completed {
+		return &g, fmt.Errorf("group already completed")
+	}
+
+	// 2. Load expected clue
+	var expectedCode string
+	err = tx.QueryRowContext(ctx, `
+        SELECT qrcode FROM clues WHERE pathway = $1 AND index_num = $2
+    `, g.Pathway, g.CurrentClueIdx).Scan(&expectedCode)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("clue not found for pathway=%s index=%d", g.Pathway, g.CurrentClueIdx)
+		}
+		return nil, fmt.Errorf("query clue: %w", err)
+	}
+
+	// 3. Validate scanned QR
+	if subtle.ConstantTimeCompare([]byte(scannedCode), []byte(expectedCode)) != 1 {
+		return nil, fmt.Errorf("invalid QR code")
+	}
+
+	// 4. Update progress atomically and fetch new state
+	err = tx.QueryRowContext(ctx, `
+        UPDATE groups
+        SET current_clue_idx = current_clue_idx + 1,
+            completed = (current_clue_idx + 1) >= $2,
+            end_time = CASE
+                WHEN (current_clue_idx + 1) >= $2 AND end_time IS NULL
+                THEN NOW() AT TIME ZONE 'UTC'
+                ELSE end_time
+            END
+        WHERE id = $1
+        RETURNING id, name, pathway, current_clue_idx, completed, end_time
+    `, g.ID, totalClues).Scan(
+		&g.ID, &g.Name, &g.Pathway, &g.CurrentClueIdx, &g.Completed, &g.EndTime,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("update group progress: %w", err)
+	}
+
+	// Commit transaction
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit tx: %w", err)
+	}
+
+	return &g, nil
 }
