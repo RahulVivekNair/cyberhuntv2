@@ -116,14 +116,9 @@
         <div class="card bg-base-200 p-6 mt-6">
           <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <h2 class="text-2xl font-bold text-primary">Live Leaderboard</h2>
-            <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-              <button id="refreshLeaderboard" class="btn btn-outline btn-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-                </svg>
-                Refresh
-              </button>
-              <div class="btn btn-primary btn-sm text-xs sm:text-sm truncate max-w-full" id="lastUpdate">Updated: Never</div>
+            <div class="flex gap-2 mt-2 sm:mt-0 items-center">
+              <span class="btn btn-success btn-sm font-semibold">Live</span>
+              <span class="btn btn-ghost btn-sm text-xs sm:text-sm" id="lastUpdate">Last Change: Never</span>
             </div>
           </div>
           <div class="overflow-x-auto">
@@ -501,10 +496,6 @@
       groupToDelete = null;
     });
 
-    // Manual refresh
-    document.getElementById("refreshLeaderboard").addEventListener("click", () => {
-      loadLeaderboard();
-    });
 
     // SSE connection for live updates
     let eventSource = null;
@@ -586,7 +577,7 @@
       document.getElementById("inProgressGroups").textContent = data.groups.filter(g => !g.completed).length;
 
       // Update last update time
-      document.getElementById("lastUpdate").textContent = `Updated: ${new Date().toLocaleTimeString()}`;
+      document.getElementById("lastUpdate").textContent = `Last Change: ${new Date().toLocaleTimeString()}`;
     }
 
     // Initialize stats display (will be updated by SSE)
