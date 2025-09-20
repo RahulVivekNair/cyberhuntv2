@@ -55,20 +55,11 @@ func (h *Handler) EndGame(c *gin.Context) {
 }
 
 func (h *Handler) ClearState(c *gin.Context) {
-	// Reset game settings
-	err := h.gameService.ClearState(c.Request.Context())
+	err := h.gameService.ClearAllState(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to clear game state"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to clear state"})
 		return
 	}
-
-	// Reset all groups
-	err = h.groupService.ResetGroups(c.Request.Context())
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reset groups"})
-		return
-	}
-
 	c.JSON(http.StatusOK, gin.H{"message": "Game state cleared successfully!"})
 }
 

@@ -74,12 +74,44 @@ func (s *GameService) EndGame(ctx context.Context) error {
 	return tx.Commit()
 }
 
-func (s *GameService) ClearState(ctx context.Context) error {
-	_, err := s.db.ExecContext(ctx, `
+// In GameService
+func (s *GameService) ClearAllState(ctx context.Context) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Take exclusive advisory lock for reset
+	_, err = tx.ExecContext(ctx, `SELECT pg_advisory_xact_lock(12345)`)
+	if err != nil {
+		return err
+	}
+
+	// Put game into locked state (not started, not ended)
+	_, err = tx.ExecContext(ctx, `
 		UPDATE game_settings
-		SET game_started = FALSE, game_ended = FALSE, start_time = NULL
+		SET game_started = FALSE,
+		    game_ended = FALSE,
+		    start_time = NULL
 	`)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Reset all groups
+	_, err = tx.ExecContext(ctx, `
+		UPDATE groups
+		SET current_clue_idx = 0,
+		    completed = FALSE,
+		    end_time = NULL
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Commit (advisory lock auto-released)
+	return tx.Commit()
 }
 
 func (s *GameService) GetGameStatus(ctx context.Context) (*models.GameSettings, error) {
