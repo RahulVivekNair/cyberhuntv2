@@ -62,15 +62,21 @@ func (h *LeaderboardHub) AddClient(ctx context.Context) (ch <-chan []byte, cance
 	h.mu.Unlock()
 
 	done := make(chan struct{})
+	closed := false
 
 	cancelFn := func() {
 		h.mu.Lock()
-		if _, ok := h.clients[clientCh]; ok {
+		if _, ok := h.clients[clientCh]; ok && !closed {
 			delete(h.clients, clientCh)
 			close(clientCh)
+			closed = true
 		}
 		h.mu.Unlock()
-		close(done)
+
+		if !closed {
+			close(done)
+			closed = true
+		}
 	}
 
 	go func() {
