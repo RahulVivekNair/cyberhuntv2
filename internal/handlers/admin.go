@@ -2,10 +2,10 @@ package handlers
 
 import (
 	"cyberhunt/internal/services"
+	"cyberhunt/internal/utils"
 	"database/sql"
 	"errors"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"slices"
 	"strconv"
@@ -106,7 +106,7 @@ func (h *Handler) AddGroup(c *gin.Context) {
 
 	password := strings.TrimSpace(request.Password)
 	if password == "" {
-		password = generateRandomPassword(6)
+		password = utils.GenerateRandomPassword(6)
 	}
 
 	if err := h.groupService.AddGroup(c.Request.Context(), name, pathway, password); err != nil {
@@ -238,13 +238,4 @@ func (h *Handler) AdminLeaderboard(c *gin.Context) {
 		"groups":     groups,
 		"totalClues": totalClues,
 	})
-}
-
-func generateRandomPassword(length int) string {
-	const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	result := make([]byte, length)
-	for i := range result {
-		result[i] = chars[rand.Intn(len(chars))]
-	}
-	return string(result)
 }
