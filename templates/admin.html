@@ -198,6 +198,37 @@
     let startTime = null;
     let elapsedInterval = null;
 
+    // Format time from backend format (MM:SS) to HH:MM:SS format
+    function formatTime(timeValue) {
+      if (!timeValue || timeValue === '-' || timeValue === null) return '-';
+
+      // If it's already a string in MM:SS format, convert to HH:MM:SS
+      if (typeof timeValue === 'string' && timeValue.includes(':')) {
+        const parts = timeValue.split(':');
+        if (parts.length === 2) {
+          let minutes = parseInt(parts[0], 10);
+          let seconds = parseInt(parts[1], 10);
+
+          if (isNaN(minutes) || isNaN(seconds)) return '-';
+
+          let hours = Math.floor(minutes / 60);
+          minutes = minutes % 60;
+
+          return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+      }
+
+      // Fallback for numeric seconds
+      if (typeof timeValue === 'number') {
+        const hours = Math.floor(timeValue / 3600);
+        const minutes = Math.floor((timeValue % 3600) / 60);
+        const seconds = timeValue % 60;
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      }
+
+      return '-';
+    }
+
     // Update game status display
     function updateGameStatus() {
       const statusDiv = document.getElementById("gameStatus");
@@ -205,9 +236,10 @@
         statusDiv.innerHTML = `<strong>Game Ended</strong>`;
       } else if (gameStarted && startTime) {
         const elapsed = Math.floor((new Date() - startTime) / 1000);
-        const minutes = Math.floor(elapsed / 60);
+        const hours = Math.floor(elapsed / 3600);
+        const minutes = Math.floor((elapsed % 3600) / 60);
         const seconds = elapsed % 60;
-        statusDiv.innerHTML = `<strong>Game Running</strong> - Elapsed Time: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+        statusDiv.innerHTML = `<strong>Game Running</strong> - Elapsed Time: ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
       } else {
         statusDiv.innerHTML = `<strong>Game Not Started</strong>`;
       }
@@ -563,7 +595,7 @@
             <td class="text-sm md:text-base">
               ${g.completed ? '<span class="badge badge-success">Done</span>' : '<span class="badge badge-warning">Playing</span>'}
             </td>
-            <td class="text-sm md:text-base font-mono">${g.total_time || '-'}</td>
+            <td class="text-sm md:text-base font-mono">${formatTime(g.total_time)}</td>
             <td class="text-sm md:text-base">
               <button class="btn btn-error btn-xs" onclick="deleteGroup(${g.id}, '${g.name}')">Delete</button>
             </td>

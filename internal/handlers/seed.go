@@ -20,8 +20,6 @@ func (h *Handler) SeedGroups(c *gin.Context) {
 	for i := 0; i < 4; i++ {
 		pathwayCount[pathways[i]] = groupsPerPathway
 	}
-	// Add one extra to make 50 total
-	pathwayCount["red"] = 13
 
 	for pathway, count := range pathwayCount {
 		for i := 0; i < count; i++ {

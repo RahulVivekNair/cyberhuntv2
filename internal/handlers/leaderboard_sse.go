@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -129,6 +130,13 @@ func (h *Handler) BroadcastLeaderboard(ctx context.Context) error {
 		return errors.New("failed to fetch leaderboard") // generic for client
 	}
 
+	// Get game start time for calculating total_time
+	settings, err := h.gameService.GetGameStatus(ctx)
+	var startTime *time.Time
+	if err == nil && settings.StartTime != nil {
+		startTime = settings.StartTime
+	}
+
 	var out []map[string]interface{}
 	rank := 1
 	for _, group := range groups {
@@ -139,6 +147,17 @@ func (h *Handler) BroadcastLeaderboard(ctx context.Context) error {
 			"current_clue_idx": group.CurrentClueIdx,
 			"completed":        group.Completed,
 		}
+
+		// Calculate total_time for completed groups
+		if group.Completed && group.EndTime != nil && startTime != nil {
+			duration := group.EndTime.Sub(*startTime)
+			minutes := int(duration.Minutes())
+			seconds := int(duration.Seconds()) % 60
+			entry["total_time"] = fmt.Sprintf("%d:%02d", minutes, seconds)
+		} else {
+			entry["total_time"] = nil
+		}
+
 		switch rank {
 		case 1:
 			entry["badge"] = "🥇"
