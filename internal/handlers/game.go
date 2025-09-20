@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"context"
+	"log"
 	"net/http"
 	"time"
 
@@ -93,6 +95,13 @@ func (h *Handler) ScanQR(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update progress"})
 		return
 	}
+
+	// Broadcast updated leaderboard asynchronously so response isn't delayed.
+	go func() {
+		if err := h.BroadcastLeaderboard(context.Background()); err != nil {
+			log.Printf("broadcast leaderboard error: %v", err)
+		}
+	}()
 
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Correct QR code!"})
 }

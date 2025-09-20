@@ -145,3 +145,58 @@ func (s *GroupService) GetStats(ctx context.Context) (int, int, int, error) {
 	inProgressGroups := totalGroups - completedGroups
 	return totalGroups, completedGroups, inProgressGroups, nil
 }
+
+func (s *GroupService) GetLeaderboardData(ctx context.Context) (int, []models.Group, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, nil, err
+	}
+	defer tx.Rollback()
+
+	var totalClues int
+	err = tx.QueryRowContext(ctx, `
+        SELECT total_clues
+        FROM game_settings
+        WHERE id = 1
+    `).Scan(&totalClues)
+	if err == sql.ErrNoRows {
+		totalClues = 1
+	} else if err != nil {
+		return 0, nil, err
+	}
+
+	rows, err := tx.QueryContext(ctx, `
+        SELECT id, name, pathway, current_clue_idx, completed, end_time
+        FROM groups
+        ORDER BY completed DESC, current_clue_idx DESC, end_time ASC, id ASC
+    `)
+	if err != nil {
+		return 0, nil, err
+	}
+	defer rows.Close()
+
+	var groups []models.Group
+	for rows.Next() {
+		var g models.Group
+		var endTime sql.NullTime
+		if err := rows.Scan(
+			&g.ID, &g.Name, &g.Pathway, &g.CurrentClueIdx,
+			&g.Completed, &endTime,
+		); err != nil {
+			return 0, nil, err
+		}
+		if endTime.Valid {
+			g.EndTime = &endTime.Time
+		}
+		groups = append(groups, g)
+	}
+	if err := rows.Err(); err != nil {
+		return 0, nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, nil, err
+	}
+
+	return totalClues, groups, nil
+}

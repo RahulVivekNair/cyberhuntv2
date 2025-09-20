@@ -38,7 +38,8 @@ func SetupRoutes(h *handlers.Handler, jwtSecret string) *gin.Engine {
 	// User Routes (require authentication)
 	r.GET("/game", m.AuthMiddleware(), h.GamePage)
 	r.GET("/leaderboard", m.AuthMiddleware(), h.LeaderboardPage)
-	r.GET("/api/leaderboard", m.AuthMiddleware(), h.GetLeaderboard)
+	r.GET("/api/leaderboard/stream", m.AuthMiddleware(), h.LeaderboardStream)
+
 	r.POST("/api/scan", m.AuthMiddleware(), h.ScanQR)
 
 	// Admin Routes
