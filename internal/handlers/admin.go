@@ -116,6 +116,12 @@ func (h *Handler) AddGroup(c *gin.Context) {
 		return
 	}
 
+	// Broadcast updated leaderboard after adding group
+	if err := h.BroadcastLeaderboard(c.Request.Context()); err != nil {
+		// Log the error but don't fail the request since group was added successfully
+		c.Header("X-Warning", "Leaderboard broadcast failed")
+	}
+
 	c.JSON(http.StatusCreated, gin.H{
 		"message":  "Group added successfully!",
 		"password": password,
