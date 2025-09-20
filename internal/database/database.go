@@ -49,11 +49,11 @@ const (
 
 	createGameSettingsTable = `
 	CREATE TABLE IF NOT EXISTS game_settings (
-		id SERIAL PRIMARY KEY,
-		total_clues INTEGER DEFAULT 1,
-		start_time TIMESTAMPTZ,
-		game_started BOOLEAN DEFAULT FALSE,
-		game_ended BOOLEAN DEFAULT FALSE
+		id          INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+		total_clues INTEGER NOT NULL DEFAULT 1,
+		start_time  TIMESTAMPTZ,
+		game_started BOOLEAN NOT NULL DEFAULT FALSE,
+		game_ended   BOOLEAN NOT NULL DEFAULT FALSE
 	);`
 
 	createAdminsTable = `
@@ -81,25 +81,19 @@ func createTables(db *sql.DB) error {
 }
 
 func ensureDefaultAdmin(db *sql.DB) error {
-	var count int
-	if err := db.QueryRow("SELECT COUNT(*) FROM admins").Scan(&count); err != nil {
-		return err
-	}
-	if count > 0 {
-		return nil
-	}
-	_, err := db.Exec(`INSERT INTO admins (name, password) VALUES ($1, $2)`, "admin", "admin")
+	_, err := db.Exec(`
+		INSERT INTO admins (name, password)
+		SELECT $1, $2
+		WHERE NOT EXISTS (SELECT 1 FROM admins)
+	`, "admin", "admin")
 	return err
 }
 
 func ensureDefaultGameSettings(db *sql.DB) error {
-	var count int
-	if err := db.QueryRow("SELECT COUNT(*) FROM game_settings").Scan(&count); err != nil {
-		return err
-	}
-	if count > 0 {
-		return nil
-	}
-	_, err := db.Exec(`INSERT INTO game_settings (total_clues) VALUES ($1)`, 1)
+	_, err := db.Exec(`
+		INSERT INTO game_settings (id, total_clues)
+		VALUES (1, $1)
+		ON CONFLICT (id) DO NOTHING
+	`, 1)
 	return err
 }
