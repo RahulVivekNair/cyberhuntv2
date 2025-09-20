@@ -50,8 +50,21 @@ func (s *GroupService) AddGroup(ctx context.Context, name, pathway, password str
 }
 
 func (s *GroupService) DeleteGroup(ctx context.Context, id int) error {
-	_, err := s.db.ExecContext(ctx, "DELETE FROM groups WHERE id = $1", id)
-	return err
+	res, err := s.db.ExecContext(ctx, "DELETE FROM groups WHERE id = $1", id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
 }
 
 func (s *GroupService) GetGroupByID(ctx context.Context, id int) (*models.Group, error) {

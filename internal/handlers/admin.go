@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"cyberhunt/internal/services"
+	"database/sql"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -111,17 +112,22 @@ func (h *Handler) AddGroup(c *gin.Context) {
 func (h *Handler) DeleteGroup(c *gin.Context) {
 	groupIDStr := c.Param("id")
 	groupID, err := strconv.Atoi(groupIDStr)
-	if err != nil {
+	if err != nil || groupID <= 0 { // Add bounds checking
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
 		return
 	}
 
 	err = h.groupService.DeleteGroup(c.Request.Context(), groupID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Group not found"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete group"})
 		return
 	}
 
+	// Or, if you prefer to keep a success message:
 	c.JSON(http.StatusOK, gin.H{"message": "Group deleted successfully!"})
 }
 
