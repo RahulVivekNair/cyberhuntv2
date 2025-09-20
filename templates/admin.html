@@ -506,72 +506,101 @@
       loadLeaderboard();
     });
 
-    // Load leaderboard
-    async function loadLeaderboard() {
-      try {
-        const [statsResponse, leaderboardResponse] = await Promise.all([
-          fetch("/api/admin/stats"),
-          fetch("/api/admin/leaderboard")
-        ]);
+    // SSE connection for live updates
+    let eventSource = null;
+    let retryCount = 0;
+    const maxRetries = 3;
 
-        const stats = await statsResponse.json();
-        const leaderboard = await leaderboardResponse.json();
-
-        const tbody = document.getElementById("leaderboard");
-
-        tbody.innerHTML = leaderboard.groups.map((g, index) => {
-          const progressPercent = Math.round((g.current_clue_idx / leaderboard.totalClues) * 100);
-          let rowClass = '';
-          if (g.completed) {
-            rowClass = 'bg-success/10';
-          } else if (index % 2 === 1) {
-            rowClass = 'bg-base-200/50'; // zebra striping for non-completed rows
-          }
-
-          return `
-            <tr class="${rowClass}">
-              <td class="whitespace-nowrap text-sm md:text-base font-bold">${g.rank} ${g.badge || ''}</td>
-              <td class="text-sm md:text-base font-medium">${g.name}</td>
-              <td class="text-sm md:text-base">
-                <span class="badge badge-outline">${g.pathway.toUpperCase()}</span>
-              </td>
-              <td class="text-sm md:text-base">
-                <div class="flex items-center gap-2">
-                  <span>${g.current_clue_idx}/${leaderboard.totalClues}</span>
-                  <div class="w-12 bg-base-300 rounded-full h-2">
-                    <div class="bg-primary h-2 rounded-full" style="width: ${progressPercent}%"></div>
-                  </div>
-                </div>
-              </td>
-              <td class="text-sm md:text-base">
-                ${g.completed ? '<span class="badge badge-success">Done</span>' : '<span class="badge badge-warning">Playing</span>'}
-              </td>
-              <td class="text-sm md:text-base font-mono">${g.total_time || '-'}</td>
-              <td class="text-sm md:text-base">
-                <button class="btn btn-error btn-xs" onclick="deleteGroup(${g.id}, '${g.name}')">Delete</button>
-              </td>
-            </tr>
-          `;
-        }).join("");
-
-        // Update stats
-        document.getElementById("totalGroups").textContent = stats.totalGroups;
-        document.getElementById("completedGroups").textContent = stats.completedGroups;
-        document.getElementById("inProgressGroups").textContent = stats.inProgressGroups;
-
-        // Update last update time
-        document.getElementById("lastUpdate").textContent = `Updated: ${new Date().toLocaleTimeString()}`;
-
-      } catch (err) {
-        console.error("Failed to load leaderboard:", err);
-        document.getElementById("leaderboard").innerHTML = '<tr><td colspan="7" class="text-center text-error">Failed to load data</td></tr>';
+    function connectSSE() {
+      if (eventSource) {
+        eventSource.close();
       }
+
+      eventSource = new EventSource('/api/admin/leaderboard/stream');
+
+      eventSource.onmessage = function(event) {
+        try {
+          const data = JSON.parse(event.data);
+          updateLeaderboardFromSSE(data);
+          retryCount = 0; // Reset retry count on successful connection
+        } catch (err) {
+          console.error('Error parsing SSE data:', err);
+        }
+      };
+
+      eventSource.onerror = function(event) {
+        console.error('SSE connection error:', event);
+        if (retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(connectSSE, 1000 * retryCount); // Exponential backoff
+        }
+      };
+
+      eventSource.onopen = function(event) {
+        console.log('SSE connection opened');
+        retryCount = 0;
+      };
     }
 
-    // Initial load
+    function updateLeaderboardFromSSE(data) {
+      const tbody = document.getElementById("leaderboard");
+
+      tbody.innerHTML = data.groups.map((g, index) => {
+        const progressPercent = Math.round((g.current_clue_idx / data.totalClues) * 100);
+        let rowClass = '';
+        if (g.completed) {
+          rowClass = 'bg-success/10';
+        } else if (index % 2 === 1) {
+          rowClass = 'bg-base-200/50';
+        }
+
+        return `
+          <tr class="${rowClass}">
+            <td class="whitespace-nowrap text-sm md:text-base font-bold">${g.rank} ${g.badge || ''}</td>
+            <td class="text-sm md:text-base font-medium">${g.name}</td>
+            <td class="text-sm md:text-base">
+              <span class="badge badge-outline">${g.pathway.toUpperCase()}</span>
+            </td>
+            <td class="text-sm md:text-base">
+              <div class="flex items-center gap-2">
+                <span>${g.current_clue_idx}/${data.totalClues}</span>
+                <div class="w-12 bg-base-300 rounded-full h-2">
+                  <div class="bg-primary h-2 rounded-full" style="width: ${progressPercent}%"></div>
+                </div>
+              </div>
+            </td>
+            <td class="text-sm md:text-base">
+              ${g.completed ? '<span class="badge badge-success">Done</span>' : '<span class="badge badge-warning">Playing</span>'}
+            </td>
+            <td class="text-sm md:text-base font-mono">${g.total_time || '-'}</td>
+            <td class="text-sm md:text-base">
+              <button class="btn btn-error btn-xs" onclick="deleteGroup(${g.id}, '${g.name}')">Delete</button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+      // Update stats
+      document.getElementById("totalGroups").textContent = data.groups.length;
+      document.getElementById("completedGroups").textContent = data.groups.filter(g => g.completed).length;
+      document.getElementById("inProgressGroups").textContent = data.groups.filter(g => !g.completed).length;
+
+      // Update last update time
+      document.getElementById("lastUpdate").textContent = `Updated: ${new Date().toLocaleTimeString()}`;
+    }
+
+    // Initialize stats display (will be updated by SSE)
+    function loadLeaderboard() {
+      // Initialize stats with loading indicators
+      document.getElementById("totalGroups").textContent = "0";
+      document.getElementById("completedGroups").textContent = "0";
+      document.getElementById("inProgressGroups").textContent = "0";
+    }
+
+    // Initial load and setup
     loadGameStatus();
-    loadLeaderboard();
-    setInterval(loadLeaderboard, 5000); // refresh leaderboard every 5s
+    connectSSE(); // Start SSE connection
+    loadLeaderboard(); // Load initial data via REST API
   </script>
 </body>
 </html>

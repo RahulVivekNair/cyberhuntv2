@@ -50,8 +50,7 @@ func SetupRoutes(h *handlers.Handler, jwtSecret string) *gin.Engine {
 	r.POST("/api/admin/group", m.AdminAuthMiddleware(), h.AddGroup)
 	r.DELETE("/api/admin/group/:id", m.AdminAuthMiddleware(), h.DeleteGroup)
 	r.GET("/api/admin/status", m.AdminAuthMiddleware(), h.GetGameStatus)
-	r.GET("/api/admin/stats", m.AdminAuthMiddleware(), h.GetStats)
-	r.GET("/api/admin/leaderboard", m.AdminAuthMiddleware(), h.AdminLeaderboard)
+	r.GET("/api/admin/leaderboard/stream", m.AdminAuthMiddleware(), h.LeaderboardStream)
 
 	// Seed routes
 	r.GET("/seed", m.AdminAuthMiddleware(), h.SeedPage)

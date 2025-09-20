@@ -129,23 +129,6 @@ func (s *GroupService) GetGroupsForLeaderboard(ctx context.Context) ([]models.Gr
 	return groups, nil
 }
 
-func (s *GroupService) GetStats(ctx context.Context) (int, int, int, error) {
-	var totalGroups, completedGroups int
-
-	err := s.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM groups").Scan(&totalGroups)
-	if err != nil {
-		return 0, 0, 0, err
-	}
-
-	err = s.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM groups WHERE completed = TRUE").Scan(&completedGroups)
-	if err != nil {
-		return 0, 0, 0, err
-	}
-
-	inProgressGroups := totalGroups - completedGroups
-	return totalGroups, completedGroups, inProgressGroups, nil
-}
-
 func (s *GroupService) GetLeaderboardData(ctx context.Context) (int, []models.Group, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
