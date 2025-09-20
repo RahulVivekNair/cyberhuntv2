@@ -4,6 +4,7 @@ import (
 	"context"
 	"cyberhunt/internal/models"
 	"database/sql"
+	"fmt"
 	"time"
 )
 
@@ -117,16 +118,21 @@ func (s *GameService) ClearAllState(ctx context.Context) error {
 func (s *GameService) GetGameStatus(ctx context.Context) (*models.GameSettings, error) {
 	var settings models.GameSettings
 	var startTime sql.NullTime
+
 	err := s.db.QueryRowContext(ctx, `
-		SELECT id, total_clues, start_time, game_started, game_ended
-		FROM game_settings
-	`).Scan(&settings.ID, &settings.TotalClues, &startTime, &settings.GameStarted, &settings.GameEnded)
+        SELECT id, total_clues, start_time, game_started, game_ended
+        FROM game_settings
+        WHERE id = 1
+    `).Scan(&settings.ID, &settings.TotalClues, &startTime, &settings.GameStarted, &settings.GameEnded)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetGameStatus query failed: %w", err)
 	}
+
 	if startTime.Valid {
-		settings.StartTime = &startTime.Time
+		t := startTime.Time
+		settings.StartTime = &t
 	}
+
 	return &settings, nil
 }
 

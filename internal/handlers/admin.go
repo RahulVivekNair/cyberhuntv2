@@ -60,6 +60,13 @@ func (h *Handler) ClearState(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to clear state"})
 		return
 	}
+
+	// Broadcast updated leaderboard after clearing state
+	if err := h.BroadcastLeaderboard(c.Request.Context()); err != nil {
+		// Log the error but don't fail the request since state was cleared successfully
+		c.Header("X-Warning", "Leaderboard broadcast failed")
+	}
+
 	c.JSON(http.StatusOK, gin.H{"message": "Game state cleared successfully!"})
 }
 
@@ -140,7 +147,9 @@ func (h *Handler) DeleteGroup(c *gin.Context) {
 func (h *Handler) GetGameStatus(c *gin.Context) {
 	settings, err := h.gameService.GetGameStatus(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get game status"})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get game status",
+		})
 		return
 	}
 
@@ -148,8 +157,9 @@ func (h *Handler) GetGameStatus(c *gin.Context) {
 		"game_started": settings.GameStarted,
 		"game_ended":   settings.GameEnded,
 	}
+
 	if settings.StartTime != nil {
-		response["start_time"] = settings.StartTime.Format(time.RFC3339)
+		response["start_time"] = settings.StartTime.UTC().Format(time.RFC3339)
 	}
 
 	c.JSON(http.StatusOK, response)
