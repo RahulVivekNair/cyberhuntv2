@@ -141,6 +141,7 @@ func (h *Handler) BroadcastLeaderboard(ctx context.Context) error {
 	rank := 1
 	for _, group := range groups {
 		entry := map[string]interface{}{
+			"id":               group.ID,
 			"rank":             rank,
 			"name":             group.Name,
 			"pathway":          group.Pathway,

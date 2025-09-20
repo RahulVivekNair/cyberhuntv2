@@ -146,6 +146,10 @@ func (h *Handler) DeleteGroup(c *gin.Context) {
 		return
 	}
 
+	if err := h.BroadcastLeaderboard(c.Request.Context()); err != nil {
+		// Log the error but don't fail the request since group was added successfully
+		c.Header("X-Warning", "Leaderboard broadcast failed")
+	}
 	// Or, if you prefer to keep a success message:
 	c.JSON(http.StatusOK, gin.H{"message": "Group deleted successfully!"})
 }
