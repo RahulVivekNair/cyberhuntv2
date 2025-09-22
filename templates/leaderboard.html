@@ -1,199 +1,169 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>Cyberhunt Leaderboard</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Tailwind + DaisyUI -->
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="utf-8">
+  <title>Cyberhunt Leaderboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Tailwind + DaisyUI -->
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="min-h-screen bg-base-200 font-sans">
-    <!-- Navbar -->
-    <nav class="w-full bg-base-100 shadow-lg py-2 px-4 sm:py-4 sm:px-6 flex justify-between items-center sticky top-0 z-10 rounded-b-2xl">
-        <h1 class="text-xl sm:text-2xl font-bold text-primary">Cyberhunt</h1>
-        <div class="flex gap-2 sm:gap-4 flex-wrap">
-            <a href="/game" class="btn btn-outline btn-primary btn-sm">Game</a>
-            <button id="logout" class="btn btn-error btn-sm">Logout</button>
-        </div>
-    </nav>
 
-    <div class="container mx-auto p-6">
-        <div class="card w-full max-w-6xl mx-auto bg-base-100 shadow-xl rounded-2xl">
-            <div class="card-body p-6">
-                <div class="flex flex-col sm:flex-row justify-between items-center mb-6">
-    <h1 class="text-3xl font-bold text-primary">Leaderboard</h1>
-    <div class="flex gap-2 mt-2 sm:mt-0 items-center">
-        <span class="btn btn-success btn-sm font-semibold">Live</span>
-        <span class="btn btn-ghost btn-sm text-xs sm:text-sm" id="lastUpdate">Last Change: Never</span>
+  <!-- Navbar -->
+  <nav class="w-full bg-base-100 shadow-lg py-2 px-4 sm:py-4 sm:px-6 flex justify-between items-center sticky top-0 z-10 rounded-b-2xl">
+    <h1 class="text-xl sm:text-2xl font-bold text-primary">Cyberhunt</h1>
+    <div class="flex gap-2 sm:gap-4 flex-wrap">
+      <a href="/game" class="btn btn-outline btn-primary btn-sm">Game</a>
+      <button id="logout" class="btn btn-error btn-sm">Logout</button>
     </div>
-</div>
+  </nav>
 
+  <div class="container mx-auto p-6">
+    <div class="card w-full max-w-6xl mx-auto bg-base-100 shadow-xl rounded-2xl">
+      <div class="card-body p-6">
+        
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row justify-between items-center mb-6">
+          <h1 class="text-3xl font-bold text-primary">Leaderboard</h1>
+          <div class="flex gap-2 mt-2 sm:mt-0 items-center">
+            <span class="btn btn-success btn-sm font-semibold">Live</span>
+            <span class="btn btn-ghost btn-sm text-xs sm:text-sm" id="lastUpdate">Last Change: Never</span>
+          </div>
+        </div>
 
-                <!-- Quick Stats -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div class="stat bg-base-200 rounded-lg p-4">
-                        <div class="stat-figure text-primary">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"></path></svg>
-                        </div>
-                        <div class="stat-title">Total Groups</div>
-                        <div id="totalGroups" class="stat-value text-primary">-</div>
-                    </div>
-                    <div class="stat bg-base-200 rounded-lg p-4">
-                        <div class="stat-figure text-success">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                        </div>
-                        <div class="stat-title">Completed</div>
-                        <div id="completedGroups" class="stat-value text-success">-</div>
-                    </div>
-                    <div class="stat bg-base-200 rounded-lg p-4">
-                        <div class="stat-figure text-warning">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        </div>
-                        <div class="stat-title">In Progress</div>
-                        <div id="inProgressGroups" class="stat-value text-warning">-</div>
-                    </div>
-                </div>
-
-                <div class="overflow-x-auto">
-                    <table class="table w-full">
-                        <thead>
-                            <tr class="bg-primary/10">
-                                <th class="text-sm md:text-base">Rank</th>
-                                <th class="text-sm md:text-base">Group</th>
-                                <th class="text-sm md:text-base">Pathway</th>
-                                <th class="text-sm md:text-base">Progress</th>
-                                <th class="text-sm md:text-base">Status</th>
-                                <th class="text-sm md:text-base">Total Time</th>
-                            </tr>
-                        </thead>
-                        <tbody id="leaderboard">
-                            <tr><td colspan="6" class="text-center">Loading...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div class="stat bg-base-200 rounded-lg p-4">
+            <div class="stat-figure text-primary">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"/>
+              </svg>
             </div>
+            <div class="stat-title">Total Groups</div>
+            <div id="totalGroups" class="stat-value text-primary">-</div>
+          </div>
+          <div class="stat bg-base-200 rounded-lg p-4">
+            <div class="stat-figure text-success">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+            </div>
+            <div class="stat-title">Completed</div>
+            <div id="completedGroups" class="stat-value text-success">-</div>
+          </div>
+          <div class="stat bg-base-200 rounded-lg p-4">
+            <div class="stat-figure text-warning">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </div>
+            <div class="stat-title">In Progress</div>
+            <div id="inProgressGroups" class="stat-value text-warning">-</div>
+          </div>
         </div>
-    </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
+        <!-- Leaderboard Table -->
+        <div class="overflow-x-auto">
+          <table class="table w-full">
+            <thead>
+              <tr class="bg-primary/10">
+                <th>Rank</th>
+                <th>Group</th>
+                <th>Progress</th>
+                <th>Status</th>
+                <th>Total Time</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard">
+              <tr><td colspan="5" class="text-center">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+  document.addEventListener("DOMContentLoaded", () => {
     const $ = id => document.getElementById(id);
 
-    // Format time from backend format (MM:SS) to HH:MM:SS format
-    function formatTime(timeValue) {
-      if (!timeValue || timeValue === '-' || timeValue === null) return '-';
+    const formatTime = (t) => {
+      if (!t || t === "-" || t === null) return "-";
+      if (typeof t === "string" && t.includes(":")) {
+        let [m, s] = t.split(":").map(Number);
+        if (isNaN(m) || isNaN(s)) return "-";
+        const h = Math.floor(m / 60);
+        m %= 60;
+        return [h, m, s].map(v => v.toString().padStart(2, "0")).join(":");
+      }
+      if (typeof t === "number") {
+        const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = t % 60;
+        return [h, m, s].map(v => v.toString().padStart(2, "0")).join(":");
+      }
+      return "-";
+    };
 
-      // If it's already a string in MM:SS format, convert to HH:MM:SS
-      if (typeof timeValue === 'string' && timeValue.includes(':')) {
-        const parts = timeValue.split(':');
-        if (parts.length === 2) {
-          let minutes = parseInt(parts[0], 10);
-          let seconds = parseInt(parts[1], 10);
+    const renderRow = (g, totalClues) => {
+      const progress = `${g.current_clue_idx || 0}/${totalClues}`;
+      const percent = Math.round(((g.current_clue_idx || 0) / totalClues) * 100);
+      const rowClass = g.completed ? "bg-success/10" : ((g.rank || 0) % 2 ? "bg-base-200/50" : "");
+      const status = g.completed ? '<span class="badge badge-success">Completed</span>' : "";
 
-          if (isNaN(minutes) || isNaN(seconds)) return '-';
+      return `
+        <tr class="${rowClass}">
+          <td class="font-bold">${g.rank} ${g.badge || ""}</td>
+          <td class="font-medium">${g.name}</td>
+          <td>
+            <div class="flex items-center gap-2">
+              <span>${progress}</span>
+              <div class="w-12 bg-base-300 rounded-full h-2">
+                <div class="bg-primary h-2 rounded-full" style="width:${percent}%"></div>
+              </div>
+            </div>
+          </td>
+          <td>${status}</td>
+          <td class="font-mono">${formatTime(g.total_time)}</td>
+        </tr>`;
+    };
 
-          let hours = Math.floor(minutes / 60);
-          minutes = minutes % 60;
+    const renderLeaderboard = (data) => {
+      const tbody = $("leaderboard");
+      if (!tbody) return;
 
-          return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        }
+      if (!data || !data.groups?.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center">No data</td></tr>';
+        return;
       }
 
-      // Fallback for numeric seconds
-      if (typeof timeValue === 'number') {
-        const hours = Math.floor(timeValue / 3600);
-        const minutes = Math.floor((timeValue % 3600) / 60);
-        const seconds = timeValue % 60;
-        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-      }
+      const { groups, totalClues = 1 } = data;
+      tbody.innerHTML = groups.map(g => renderRow(g, totalClues)).join("");
 
-      return '-';
-    }
+      const completed = groups.filter(g => g.completed).length;
+      $("totalGroups").textContent = groups.length;
+      $("completedGroups").textContent = completed;
+      $("inProgressGroups").textContent = groups.length - completed;
+      $("lastUpdate").textContent = `Last Change: ${new Date().toLocaleTimeString()}`;
+    };
 
-    // Render leaderboard from SSE payload
-    function renderLeaderboard(data) {
-        const tbody = $('leaderboard');
-        if (!tbody) return;
+    const startSSE = () => {
+      const es = new EventSource("/api/leaderboard/stream");
+      es.onmessage = e => {
+        try { renderLeaderboard(JSON.parse(e.data)); }
+        catch (err) { console.error("Invalid SSE data", err); }
+      };
+      es.onerror = err => console.error("SSE error", err);
+    };
 
-        if (!data || !data.groups) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center">No data</td></tr>';
-            return;
-        }
-
-        const totalClues = data.totalClues || 1;
-
-        tbody.innerHTML = data.groups.map((g) => {
-            const progressPercent = Math.round(((g.current_clue_idx || 0) / totalClues) * 100);
-            let rowClass = '';
-            if (g.completed) {
-                rowClass = 'bg-success/10';
-            } else if ((g.rank || 0) % 2 === 1) {
-                rowClass = 'bg-base-200/50';
-            }
-
-            return `<tr class="${rowClass}">
-                <td class="whitespace-nowrap text-sm md:text-base font-bold">${g.rank} ${g.badge || ''}</td>
-                <td class="text-sm md:text-base font-medium">${g.name}</td>
-                <td class="text-sm md:text-base">
-                    <span class="badge badge-outline">${g.pathway ? g.pathway.toUpperCase() : ''}</span>
-                </td>
-                <td class="text-sm md:text-base">
-                    <div class="flex items-center gap-2">
-                        <span>${g.current_clue_idx || 0}/${totalClues}</span>
-                        <div class="w-12 bg-base-300 rounded-full h-2">
-                            <div class="bg-primary h-2 rounded-full" style="width: ${progressPercent}%"></div>
-                        </div>
-                    </div>
-                </td>
-                <td class="text-sm md:text-base">
-                    ${g.completed ? '<span class="badge badge-success">Completed</span>' : ''}
-                </td>
-                <td class="text-sm md:text-base font-mono">${formatTime(g.total_time)}</td>
-            </tr>`;
-        }).join("");
-
-        // update quick stats
-        $('totalGroups').textContent = data.groups.length || '-';
-        $('completedGroups').textContent = (data.groups.filter(g => g.completed) || []).length;
-        $('inProgressGroups').textContent = (data.groups.length - (data.groups.filter(g => g.completed) || []).length);
-        $('lastUpdate').textContent = `Last Change: ${new Date().toLocaleTimeString()}`;
-    }
-
-    // Start SSE only
-    function startSSE() {
-        const es = new EventSource('/api/leaderboard/stream');
-
-        es.onmessage = (evt) => {
-            try {
-                const data = JSON.parse(evt.data);
-                renderLeaderboard(data);
-            } catch (e) {
-                console.error('Invalid SSE data', e);
-            }
-        };
-
-        es.onerror = (err) => {
-            console.error('SSE error', err);
-        };
-    }
-
-    // kick things off
     startSSE();
 
-    // Logout
-    const logoutBtn = $('logout');
-    if (logoutBtn) {
-        logoutBtn.addEventListener("click", async () => {
-            await fetch("/logout", { method: "POST" });
-            window.location.href = "/login";
-        });
-    }
-
-    
-});
-</script>
-
-
+    $("logout")?.addEventListener("click", async () => {
+      await fetch("/logout", { method: "POST" });
+      location.href = "/login";
+    });
+  });
+  </script>
 </body>
 </html>
+   

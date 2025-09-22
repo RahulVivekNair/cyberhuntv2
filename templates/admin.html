@@ -4,7 +4,6 @@
   <meta charset="utf-8">
   <title>Cyberhunt Admin</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Tailwind + DaisyUI -->
   <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -22,20 +21,14 @@
     <div class="card w-full max-w-6xl mx-auto bg-base-100 shadow-xl rounded-2xl">
       <div class="card-body p-6">
         <h1 class="text-3xl font-bold text-center mb-6 text-primary">Admin Panel</h1>
-        
+
         <!-- Game Controls -->
         <div class="card bg-base-200 p-4 mb-6">
           <div class="text-center">
             <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-4">
-              <button id="startGameBtn" class="btn btn-primary btn-lg">
-                Start Game
-              </button>
-              <button id="endGameBtn" class="btn btn-error btn-lg">
-                End Game
-              </button>
-              <button id="clearStateBtn" class="btn btn-warning btn-lg">
-                Clear State
-              </button>
+              <button id="startGameBtn" class="btn btn-primary btn-lg">Start Game</button>
+              <button id="endGameBtn" class="btn btn-error btn-lg">End Game</button>
+              <button id="clearStateBtn" class="btn btn-warning btn-lg">Clear State</button>
             </div>
             <div id="gameStatus" class="mt-4 text-center"></div>
             <div id="statusMessages"></div>
@@ -44,21 +37,17 @@
 
         <!-- Two Column Layout -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          
+
           <!-- Add New Group Form -->
           <div class="card bg-base-200 p-6">
             <h2 class="text-2xl font-bold text-center mb-4 text-primary">Add New Group</h2>
             <form id="addGroupForm">
               <div class="form-control">
-                <label class="label">
-                  <span class="label-text font-semibold">Group Name</span>
-                </label>
+                <label class="label"><span class="label-text font-semibold">Group Name</span></label>
                 <input type="text" id="groupName" class="input input-bordered" required placeholder="Enter group name">
               </div>
               <div class="form-control">
-                <label class="label">
-                  <span class="label-text font-semibold">Pathway</span>
-                </label>
+                <label class="label"><span class="label-text font-semibold">Pathway</span></label>
                 <select id="groupPathway" class="select select-bordered" required>
                   <option value="">Select pathway</option>
                   <option value="red">🔴 Red</option>
@@ -68,9 +57,7 @@
                 </select>
               </div>
               <div class="form-control">
-                <label class="label">
-                  <span class="label-text font-semibold">Password</span>
-                </label>
+                <label class="label"><span class="label-text font-semibold">Password</span></label>
                 <input type="password" id="groupPassword" class="input input-bordered" required placeholder="Enter password">
                 <button type="button" id="generatePassword" class="btn btn-ghost btn-sm mt-2">Generate Password</button>
               </div>
@@ -144,7 +131,7 @@
     </div>
   </div>
 
-  <!-- Delete Group Modal -->
+  <!-- Modals -->
   <dialog id="deleteModal" class="modal">
     <div class="modal-box">
       <h3 class="font-bold text-lg">Delete Group</h3>
@@ -155,7 +142,7 @@
       </div>
     </div>
   </dialog>
-  <!-- End Game Modal -->
+
   <dialog id="endGameModal" class="modal">
     <div class="modal-box">
       <h3 class="font-bold text-lg">End Game</h3>
@@ -167,7 +154,6 @@
     </div>
   </dialog>
 
-  <!-- Clear State Modal -->
   <dialog id="clearStateModal" class="modal">
     <div class="modal-box">
       <h3 class="font-bold text-lg">Clear Game State</h3>
@@ -179,7 +165,6 @@
     </div>
   </dialog>
 
-  <!-- Logout Confirmation Modal -->
   <dialog id="logoutModal" class="modal">
     <div class="modal-box">
       <h3 class="font-bold text-lg">Confirm Logout</h3>
@@ -192,438 +177,108 @@
   </dialog>
 
   <script>
-    let groupToDelete = null;
-    let gameStarted = false;
-    let gameEnded = false;
-    let startTime = null;
-    let elapsedInterval = null;
+    (function(){
+      const $ = id => document.getElementById(id);
+      const EL = ['startGameBtn','endGameBtn','clearStateBtn','gameStatus','statusMessages','addGroupForm','groupName','groupPathway','groupPassword','addLoading','leaderboard','totalGroups','completedGroups','inProgressGroups','lastUpdate'].reduce((acc,id)=>{acc[id]=$(id);return acc},{})
 
-    // Format time from backend format (MM:SS) to HH:MM:SS format
-    function formatTime(timeValue) {
-      if (!timeValue || timeValue === '-' || timeValue === null) return '-';
-
-      // If it's already a string in MM:SS format, convert to HH:MM:SS
-      if (typeof timeValue === 'string' && timeValue.includes(':')) {
-        const parts = timeValue.split(':');
-        if (parts.length === 2) {
-          let minutes = parseInt(parts[0], 10);
-          let seconds = parseInt(parts[1], 10);
-
-          if (isNaN(minutes) || isNaN(seconds)) return '-';
-
-          let hours = Math.floor(minutes / 60);
-          minutes = minutes % 60;
-
-          return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        }
+      const api = async (url, opts={})=>{
+        try{const r=await fetch(url,opts);const j=await r.json();if(!r.ok)throw new Error(j.error||'Request failed');return j}catch(e){showStatus(`Failed: ${e.message}`,'error');throw e}
       }
 
-      // Fallback for numeric seconds
-      if (typeof timeValue === 'number') {
-        const hours = Math.floor(timeValue / 3600);
-        const minutes = Math.floor((timeValue % 3600) / 60);
-        const seconds = timeValue % 60;
-        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      const showStatus=(msg,type='info')=>{
+        const a=document.createElement('div');a.className=`alert alert-${type} mb-2`;a.innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-info shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span>${msg}</span><button class="btn btn-sm btn-circle btn-ghost ml-auto" onclick="this.parentElement.remove()">✕</button>`;
+        EL.statusMessages.appendChild(a);setTimeout(()=>a.remove(),10000);
       }
 
-      return '-';
-    }
-
-    // Update game status display
-    function updateGameStatus() {
-      const statusDiv = document.getElementById("gameStatus");
-      if (gameEnded) {
-        statusDiv.innerHTML = `<strong>Game Ended</strong>`;
-      } else if (gameStarted && startTime) {
-        const elapsed = Math.floor((new Date() - startTime) / 1000);
-        const hours = Math.floor(elapsed / 3600);
-        const minutes = Math.floor((elapsed % 3600) / 60);
-        const seconds = elapsed % 60;
-        statusDiv.innerHTML = `<strong>Game Running</strong> - Elapsed Time: ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-      } else {
-        statusDiv.innerHTML = `<strong>Game Not Started</strong>`;
+      const fmtElapsed = s => {const pad=n=>n.toString().padStart(2,'0');return [Math.floor(s/3600),Math.floor((s%3600)/60),s%60].map(pad).join(':')}
+      const formatTime = v=>{
+        if(!v||v==='-')return '-';
+        if(typeof v==='string'&&v.includes(':')){const [m,s]=v.split(':').map(n=>parseInt(n,10));if(isNaN(m)||isNaN(s))return '-';const h=Math.floor(m/60);return [h,m%60,s].map(n=>n.toString().padStart(2,'0')).join(':')}
+        if(typeof v==='number')return fmtElapsed(v);
+        return '-';
       }
-    }
 
-    // Load initial game status from server
-    async function loadGameStatus() {
-      try {
-        const response = await fetch("/api/admin/status");
-        const data = await response.json();
-        if (response.ok) {
-          gameEnded = data.game_ended;
-          const startBtn = document.getElementById("startGameBtn");
-          const endBtn = document.getElementById("endGameBtn");
-          if (data.game_ended) {
-            // Game ended
-            gameStarted = false;
-            startBtn.disabled = false;
-            startBtn.textContent = "Start Game";
-            endBtn.disabled = true;
-            endBtn.textContent = "Game Ended";
-          } else if (data.game_started) {
-            // Game running
-            gameStarted = true;
-            startTime = new Date(data.start_time);
-            elapsedInterval = setInterval(updateGameStatus, 1000);
-            startBtn.disabled = true;
-            startBtn.textContent = "Game Started";
-            endBtn.disabled = false;
-          } else {
-            // Game not started
-            gameStarted = false;
-            startBtn.disabled = false;
-            startBtn.textContent = "Start Game";
-            endBtn.disabled = true;
-          }
+      let state = {started:false,ended:false,startTime:null,elapsedInterval:null};
+      let groupToDelete = null, es=null, retries=0, MAX_RETRIES=3;
+
+      const setButtons=(startDisabled,endDisabled,startText,endText)=>{EL.startGameBtn.disabled=startDisabled;EL.startGameBtn.textContent=startText;EL.endGameBtn.disabled=endDisabled;EL.endGameBtn.textContent=endText}
+      const updateGameStatus=()=>{
+        const {started,ended,startTime}=state;let status='<strong>Game Not Started</strong>';
+        if(ended)status='<strong>Game Ended</strong>';else if(started&&startTime){const elapsed=Math.floor((new Date()-startTime)/1000);status=`<strong>Game Running</strong> - Elapsed Time: ${fmtElapsed(elapsed)}`}
+        EL.gameStatus.innerHTML=status;
+      }
+
+      const loadGameStatus = async ()=>{
+        try{
+          const d=await api('/api/admin/status');state.ended=d.game_ended;
+          if(d.game_ended){state.started=false;setButtons(false,false,'Start Game','Game Ended')}
+          else if(d.game_started){state.started=true;state.startTime=new Date(d.start_time);state.elapsedInterval=setInterval(updateGameStatus,1000);setButtons(true,false,'Game Started','End Game')}
+          else{state.started=false;setButtons(false,true,'Start Game','End Game')}
           updateGameStatus();
-        } else {
-          console.error("Failed to load game status:", data.error);
-        }
-      } catch (err) {
-        console.error("Failed to load game status:", err);
-      }
-    }
-
-    // Show status message
-    function showStatus(message, type = "info") {
-      const container = document.getElementById("statusMessages");
-      const alert = document.createElement("div");
-      alert.className = `alert alert-${type} mb-2`;
-      alert.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-info shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-        <span>${message}</span>
-        <button class="btn btn-sm btn-circle btn-ghost ml-auto" onclick="this.parentElement.remove()">✕</button>
-      `;
-      container.appendChild(alert);
-      
-      // Auto remove after 10 seconds
-      setTimeout(() => {
-        if (alert.parentElement) alert.remove();
-      }, 10000);
-    }
-
-    // Generate random password
-    function generateRandomPassword() {
-      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-      return Array.from({length: 6}, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-    }
-
-    document.getElementById("generatePassword").addEventListener("click", () => {
-      document.getElementById("groupPassword").value = generateRandomPassword();
-    });
-
-    // Logout with confirmation modal
-    document.getElementById("logout").addEventListener("click", (e) => {
-      e.preventDefault();
-      document.getElementById("logoutModal").showModal();
-    });
-
-    // Confirm logout action
-    document.getElementById("confirmLogout").addEventListener("click", async () => {
-      document.getElementById("logoutModal").close();
-
-      document.body.style.opacity = "0";
-      document.body.style.transition = "opacity 0.3s ease-in-out";
-
-      setTimeout(async () => {
-        await fetch("/logout", { method: "POST" });
-        window.location.href = "/admin/login";
-      }, 300);
-    });
-
-    // Start Game
-    document.getElementById("startGameBtn").addEventListener("click", async () => {
-      const btn = document.getElementById("startGameBtn");
-      const status = document.getElementById("statusMessages");
-      btn.disabled = true;
-
-      let counter = 5;
-      const countdown = document.createElement("div");
-      countdown.textContent = `Starting game in ${counter} seconds...`;
-      status.appendChild(countdown);
-
-      const interval = setInterval(() => {
-        counter--;
-        if (counter > 0) {
-          countdown.textContent = `Starting game in ${counter} seconds...`;
-        } else {
-          clearInterval(interval);
-          countdown.remove();
-          startGame();
-        }
-      }, 1000);
-
-      async function startGame() {
-        try {
-          const response = await fetch("/api/admin/start", { method: "POST" });
-          const data = await response.json();
-          if (response.ok) {
-              showStatus("Game started successfully!", "success");
-              btn.textContent = "Game Started";
-              document.getElementById("endGameBtn").disabled = false;
-              gameStarted = true;
-              startTime = new Date();
-              elapsedInterval = setInterval(updateGameStatus, 1000);
-              updateGameStatus();
-            } else {
-            showStatus("Failed to start game: " + data.error, "error");
-            btn.disabled = false;
-          }
-        } catch (err) {
-          console.error(err);
-          showStatus("Failed to start game: " + err.message, "error");
-          btn.disabled = false;
-        }
-      }
-    });
-
-    // End Game
-    document.getElementById("endGameBtn").addEventListener("click", () => {
-      document.getElementById("endGameModal").showModal();
-    });
-
-    document.getElementById("confirmEndGame").addEventListener("click", async () => {
-      document.getElementById("endGameModal").close();
-      try {
-        const response = await fetch("/api/admin/end", { method: "POST" });
-        const data = await response.json();
-        if (response.ok) {
-          showStatus("Game ended successfully!", "success");
-          document.getElementById("endGameBtn").disabled = true;
-          document.getElementById("endGameBtn").textContent = "Game Ended";
-          gameStarted = false;
-          gameEnded = true;
-          if (elapsedInterval) clearInterval(elapsedInterval);
-          elapsedInterval = null;
-          startTime = null;
-          document.getElementById("startGameBtn").disabled = false;
-          updateGameStatus();
-        } else {
-          showStatus("Failed to end game: " + data.error, "error");
-        }
-      } catch (err) {
-        console.error(err);
-        showStatus("Failed to end game: " + err.message, "error");
-      }
-    });
-
-    // Clear State
-    document.getElementById("clearStateBtn").addEventListener("click", () => {
-      document.getElementById("clearStateModal").showModal();
-    });
-
-    document.getElementById("confirmClearState").addEventListener("click", async () => {
-      document.getElementById("clearStateModal").close();
-      try {
-        const response = await fetch("/api/admin/clear", { method: "POST" });
-        const data = await response.json();
-        if (response.ok) {
-          const startBtn = document.getElementById("startGameBtn");
-          const endBtn = document.getElementById("endGameBtn");
-          startBtn.disabled = false;
-          startBtn.textContent = "Start Game";
-          endBtn.disabled = true;
-          endBtn.textContent = "End Game";
-          gameStarted = false;
-          gameEnded = false;
-          if (elapsedInterval) clearInterval(elapsedInterval);
-          elapsedInterval = null;
-          startTime = null;
-          updateGameStatus();
-          showStatus("Game state cleared successfully!", "success");
-          // Refresh leaderboard
-          loadLeaderboard();
-        } else {
-          showStatus("Failed to clear state: " + data.error, "error");
-        }
-      } catch (err) {
-        console.error(err);
-        showStatus("Failed to clear state: " + err.message, "error");
-      }
-    });
-
-    // Add New Group - Fixed form validation
-    document.getElementById("addGroupForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const name = document.getElementById("groupName").value.trim();
-      const pathway = document.getElementById("groupPathway").value;
-      const password = document.getElementById("groupPassword").value.trim();
-
-      // Enhanced validation
-      if (!name) {
-        showStatus("Please enter a group name.", "warning");
-        return;
-      }
-      
-      if (!pathway || pathway === "") {
-        showStatus("Please select a pathway.", "warning");
-        return;
-      }
-      
-      if (!password) {
-        showStatus("Please enter a password.", "warning");
-        return;
+        }catch(e){console.error('Failed to load game status',e)}
       }
 
-      const addButton = document.querySelector('#addGroupForm button[type="submit"]');
-      const loadingSpinner = document.getElementById("addLoading");
-      
-      // Show loading state
-      addButton.disabled = true;
-      loadingSpinner.classList.remove("hidden");
-
-      try {
-        const response = await fetch("/api/admin/group", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, pathway, password })
-        });
-        const data = await response.json();
-        
-        if (response.ok) {
-          showStatus(`Group "${name}" added successfully! Password: ${data.password}`, "success");
-          // Clear form
-          document.getElementById("groupName").value = "";
-          document.getElementById("groupPathway").value = "";
-          document.getElementById("groupPassword").value = "";
-          // Refresh leaderboard
-          loadLeaderboard();
-        } else {
-          showStatus("Failed to add group: " + data.error, "error");
-        }
-      } catch (err) {
-        console.error(err);
-        showStatus("Failed to add group: " + err.message, "error");
-      } finally {
-        // Reset loading state
-        addButton.disabled = false;
-        loadingSpinner.classList.add("hidden");
-      }
-    });
-
-    // Delete group functionality
-    function deleteGroup(groupId, groupName) {
-      groupToDelete = { id: groupId, name: groupName };
-      document.getElementById("deleteModal").showModal();
-    }
-
-    document.getElementById("confirmDelete").addEventListener("click", async () => {
-      if (!groupToDelete) return;
-
-      try {
-        const response = await fetch(`/api/admin/group/${groupToDelete.id}`, { method: "DELETE" });
-        const data = await response.json();
-        if (response.ok) {
-          showStatus(`Group "${groupToDelete.name}" deleted successfully!`, "success");
-          document.getElementById("deleteModal").close();
-          loadLeaderboard();
-        } else {
-          showStatus("Failed to delete group: " + data.error, "error");
-        }
-      } catch (err) {
-        console.error(err);
-        showStatus("Failed to delete group: " + err.message, "error");
-      }
-      groupToDelete = null;
-    });
-
-
-    // SSE connection for live updates
-    let eventSource = null;
-    let retryCount = 0;
-    const maxRetries = 3;
-
-    function connectSSE() {
-      if (eventSource) {
-        eventSource.close();
+      const startGame = async ()=>{
+        EL.startGameBtn.disabled=true;const cd=document.createElement('div');EL.statusMessages.appendChild(cd);
+        for(let i=5;i>0;i--){cd.textContent=`Starting game in ${i} seconds...`;await new Promise(r=>setTimeout(r,1000))}
+        cd.remove();
+        try{await api('/api/admin/start',{method:'POST'});showStatus('Game started successfully!','success');state.started=true;state.startTime=new Date();state.elapsedInterval=setInterval(updateGameStatus,1000);setButtons(true,false,'Game Started','End Game');updateGameStatus()}catch(e){EL.startGameBtn.disabled=false}
       }
 
-      eventSource = new EventSource('/api/admin/leaderboard/stream');
+      const endGame = async ()=>{endGameModal.close();try{await api('/api/admin/end',{method:'POST'});showStatus('Game ended successfully!','success');state.started=false;state.ended=true;clearInterval(state.elapsedInterval);state.elapsedInterval=null;state.startTime=null;setButtons(false,true,'Start Game','Game Ended');updateGameStatus()}catch(e){console.error(e)} }
 
-      eventSource.onmessage = function(event) {
-        try {
-          const data = JSON.parse(event.data);
-          updateLeaderboardFromSSE(data);
-          retryCount = 0; // Reset retry count on successful connection
-        } catch (err) {
-          console.error('Error parsing SSE data:', err);
-        }
-      };
+      const clearState = async ()=>{clearStateModal.close();try{await api('/api/admin/clear',{method:'POST'});state={started:false,ended:false,startTime:null,elapsedInterval:null};clearInterval(state.elapsedInterval);setButtons(false,true,'Start Game','End Game');updateGameStatus();showStatus('Game state cleared successfully!','success');updateStats([])}catch(e){console.error(e)} }
 
-      eventSource.onerror = function(event) {
-        console.error('SSE connection error:', event);
-        if (retryCount < maxRetries) {
-          retryCount++;
-          setTimeout(connectSSE, 1000 * retryCount); // Exponential backoff
-        }
-      };
+      const generatePassword = ()=>{const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';EL.groupPassword.value=Array.from({length:6},()=>chars[Math.floor(Math.random()*chars.length)]).join('')}
 
-      eventSource.onopen = function(event) {
-        console.log('SSE connection opened');
-        retryCount = 0;
-      };
-    }
+      const addGroup = async e=>{e.preventDefault();const name=EL.groupName.value.trim(),path=EL.groupPathway.value,password=EL.groupPassword.value.trim();if(!name||!path||!password){showStatus('Please fill in all fields.','warning');return}const btn=e.target.querySelector('button[type="submit"]');btn.disabled=true;EL.addLoading.classList.remove('hidden');try{const d=await api('/api/admin/group',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,pathway:path,password})});showStatus(`Group "${name}" added successfully! Password: ${d.password}`,'success');EL.groupName.value=EL.groupPathway.value=EL.groupPassword.value=''}catch(e){console.error(e)}finally{btn.disabled=false;EL.addLoading.classList.add('hidden')}}
 
-    function updateLeaderboardFromSSE(data) {
-      const tbody = document.getElementById("leaderboard");
+      const deleteGroupReq = async ()=>{if(!groupToDelete)return;try{await api(`/api/admin/group/${groupToDelete.id}`,{method:'DELETE'});showStatus(`Group "${groupToDelete.name}" deleted successfully!`,'success');deleteModal.close()}catch(e){console.error(e)}groupToDelete=null}
 
-      tbody.innerHTML = data.groups.map((g, index) => {
-        const progressPercent = Math.round((g.current_clue_idx / data.totalClues) * 100);
-        let rowClass = '';
-        if (g.completed) {
-          rowClass = 'bg-success/10';
-        } else if (index % 2 === 1) {
-          rowClass = 'bg-base-200/50';
-        }
+      const logout = async ()=>{logoutModal.close();document.body.style.opacity='0';document.body.style.transition='opacity 0.3s ease-in-out';setTimeout(async ()=>{await fetch('/logout',{method:'POST'});window.location.href='/admin/login'},300)}
 
-        return `
-          <tr class="${rowClass}">
-            <td class="whitespace-nowrap text-sm md:text-base font-bold">${g.rank} ${g.badge || ''}</td>
-            <td class="text-sm md:text-base font-medium">${g.name}</td>
-            <td class="text-sm md:text-base">
-              <span class="badge badge-outline">${g.pathway.toUpperCase()}</span>
-            </td>
-            <td class="text-sm md:text-base">
-              <div class="flex items-center gap-2">
-                <span>${g.current_clue_idx}/${data.totalClues}</span>
-                <div class="w-12 bg-base-300 rounded-full h-2">
-                  <div class="bg-primary h-2 rounded-full" style="width: ${progressPercent}%"></div>
+      window.deleteGroup = (id,name)=>{groupToDelete={id,name};deleteModal.showModal()}
+
+      const sseConnect = ()=>{
+        if(es)es.close();es=new EventSource('/api/admin/leaderboard/stream');
+        es.onmessage=e=>{try{updateLeaderboard(JSON.parse(e.data));retries=0}catch(err){console.error('SSE parse',err)}};
+        es.onerror=()=>{if(retries<MAX_RETRIES){retries++;setTimeout(sseConnect,1000*retries)}};
+        es.onopen=()=>retries=0;
+      }
+
+      const updateLeaderboard = data=>{
+        const rows=(data.groups||[]).map((g,i)=>{
+          const progress = Math.round((g.current_clue_idx / data.totalClues) * 100);
+          const rowClass = g.completed ? 'bg-success/10' : i % 2 ? 'bg-base-200/50' : '';
+          return `
+            <tr class="${rowClass}">
+              <td class="whitespace-nowrap text-sm md:text-base font-bold">${g.rank} ${g.badge||''}</td>
+              <td class="text-sm md:text-base font-medium">${g.name}</td>
+              <td class="text-sm md:text-base"><span class="badge badge-outline">${(g.pathway||'').toUpperCase()}</span></td>
+              <td class="text-sm md:text-base">
+                <div class="flex items-center gap-2">
+                  <span>${g.current_clue_idx}/${data.totalClues}</span>
+                  <div class="w-12 bg-base-300 rounded-full h-2"><div class="bg-primary h-2 rounded-full" style="width: ${progress}%"></div></div>
                 </div>
-              </div>
-            </td>
-            <td class="text-sm md:text-base">
-              ${g.completed ? '<span class="badge badge-success">Done</span>' : '<span class="badge badge-warning">Playing</span>'}
-            </td>
-            <td class="text-sm md:text-base font-mono">${formatTime(g.total_time)}</td>
-            <td class="text-sm md:text-base">
-              <button class="btn btn-error btn-xs" onclick="deleteGroup(${g.id}, '${g.name}')">Delete</button>
-            </td>
-          </tr>
-        `;
-      }).join("");
+              </td>
+              <td class="text-sm md:text-base"><span class="badge ${g.completed? 'badge-success">Done' : 'badge-warning">Playing'}</span></td>
+              <td class="text-sm md:text-base font-mono">${formatTime(g.total_time)}</td>
+              <td class="text-sm md:text-base"><button class="btn btn-error btn-xs" onclick="deleteGroup(${g.id}, '${g.name.replace(/'/g,"\\'")}')">Delete</button></td>
+            </tr>`
+        }).join('')||'<tr><td colspan="7" class="text-center">No groups</td></tr>';
+        EL.leaderboard.innerHTML=rows;
+        updateStats(data.groups||[]);
+        EL.lastUpdate.textContent = `Last Change: ${new Date().toLocaleTimeString()}`;
+      }
 
-      // Update stats
-      document.getElementById("totalGroups").textContent = data.groups.length;
-      document.getElementById("completedGroups").textContent = data.groups.filter(g => g.completed).length;
-      document.getElementById("inProgressGroups").textContent = data.groups.filter(g => !g.completed).length;
+      const updateStats = groups=>{const g=groups||[];const completed=g.filter(x=>x.completed).length;EL.totalGroups.textContent=g.length;EL.completedGroups.textContent=completed;EL.inProgressGroups.textContent=g.length-completed}
 
-      // Update last update time
-      document.getElementById("lastUpdate").textContent = `Last Change: ${new Date().toLocaleTimeString()}`;
-    }
+      // wire events
+      EL.startGameBtn.onclick=startGame;EL.endGameBtn.onclick=()=>endGameModal.showModal();EL.clearStateBtn.onclick=()=>clearStateModal.showModal();document.getElementById('confirmEndGame').onclick=endGame;document.getElementById('confirmClearState').onclick=clearState;document.getElementById('confirmDelete').onclick=deleteGroupReq;document.getElementById('confirmLogout').onclick=logout;EL.addGroupForm.onsubmit=addGroup;document.getElementById('generatePassword').onclick=generatePassword;document.getElementById('logout').onclick=()=>logoutModal.showModal();
 
-    // Initialize stats display (will be updated by SSE)
-    function loadLeaderboard() {
-      // Initialize stats with loading indicators
-      document.getElementById("totalGroups").textContent = "0";
-      document.getElementById("completedGroups").textContent = "0";
-      document.getElementById("inProgressGroups").textContent = "0";
-    }
-
-    // Initial load and setup
-    loadGameStatus();
-    connectSSE(); // Start SSE connection
-    loadLeaderboard(); // Load initial data via REST API
+      // init
+      loadGameStatus();sseConnect();
+    })();
   </script>
 </body>
 </html>
