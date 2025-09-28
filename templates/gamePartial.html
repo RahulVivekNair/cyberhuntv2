@@ -1,0 +1,26 @@
+<div id="groupInfo" class="grid grid-cols-3 gap-2 w-full">
+  <div class="badge badge-outline w-full h-8 text-sm font-semibold px-2 truncate" title="{{.Group.Name}}">
+    <span class="truncate">{{.Group.Name}}</span>
+  </div>
+  <div class="badge badge-outline w-full h-8 text-sm font-semibold px-2 truncate
+    {{if eq .Group.Pathway "blue"}}bg-blue-600 text-white
+    {{else if eq .Group.Pathway "red"}}bg-red-600 text-white
+    {{else if eq .Group.Pathway "green"}}bg-green-600 text-white
+    {{else if eq .Group.Pathway "yellow"}}bg-yellow-400 text-gray-900{{end}}">
+    {{.Group.Pathway}}
+  </div>
+  <div class="badge badge-outline w-full h-8 text-sm font-semibold px-2 truncate
+    {{if .Group.Completed}}bg-success text-white animate-pulse{{end}}">
+    {{if .Group.Completed}}COMPLETE{{else}}Clue: {{.Group.CurrentClueIdx}}/{{.TotalClues}}{{end}}
+  </div>
+</div>
+
+{{if .Group.Completed}}
+<div class="mt-2 p-6 bg-gradient-to-br from-success/20 to-primary/20 rounded-xl text-center border-2 border-success/30 w-full animate-slideInUp">
+  <div class="text-4xl mb-3">🏆</div>
+  <h3 class="text-xl font-bold text-success mb-2">Quest Complete!</h3>
+  <p class="text-lg font-medium">Congratulations on completing all clues! Checkout the leaderboard to see your timing!</p>
+</div>
+{{else}}
+<p id="clue" class="w-full p-4 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl text-center text-lg font-medium border border-primary/20 transition-all-smooth">{{.Clue}}</p>
+{{end}}

@@ -71,7 +71,7 @@
 
     <!-- Group Info & Current Clue -->
     <div class="card w-full max-w-lg bg-base-100 shadow-xl rounded-2xl hover:shadow-2xl">
-      <div class="card-body flex flex-col items-center gap-4 p-6">
+      <div class="card-body flex flex-col items-center gap-4 p-6" id="groupPartial">
         <div id="groupInfo" class="grid grid-cols-3 gap-2 w-full">
           <div class="badge badge-outline w-full h-8 text-sm font-semibold px-2 truncate" title="{{.Group.Name}}">
             <span class="truncate">{{.Group.Name}}</span>
@@ -99,8 +99,9 @@
         <p id="clue" class="w-full p-4 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl text-center text-lg font-medium border border-primary/20">{{.Clue}}</p>
         {{end}}
 
-        <div id="feedback" class="hidden w-full text-center text-sm font-semibold opacity-0 translate-y-2 transition-all"></div>
+        
       </div>
+      <div id="feedback" class="hidden w-full text-center text-sm font-semibold opacity-0 translate-y-2 transition-all"></div>
     </div>
 
     <!-- QR Scanner -->
@@ -186,6 +187,20 @@
     const showOverlay = () => { if (!isCompleted) { scannerOverlay.style.opacity=1; scannerOverlay.style.pointerEvents="all"; } };
     const hideOverlay = () => { if (!isCompleted) { scannerOverlay.style.opacity=0; scannerOverlay.style.pointerEvents="none"; } };
 
+    async function refreshGroupPartial() {
+  try {
+    const res = await fetch("/api/game-partial");
+    const html = await res.text();
+    const container = document.getElementById("groupPartial");
+    if (container) {
+      container.innerHTML = html;
+    }
+  } catch (err) {
+    console.error("Failed to refresh group partial:", err);
+    showFeedback("⚠️ Could not load new clue. Please refresh manually.", "warning");
+  }
+}
+
     async function validateQRCode(code) {
       try {
         showFeedback("🔍 Validating code...", "info", 10000);
@@ -198,7 +213,7 @@
           feedbackEl.style.transform="scale(1.05)"; setTimeout(()=>feedbackEl.style.transform="",200);
 
           await stopCamera(); hideOverlay();
-          setTimeout(()=>location.reload(),1200);
+          setTimeout(refreshGroupPartial, 1200);
         } else {
           hideOverlay(); showFeedback("❌ Incorrect code. Try another!","error");
           feedbackEl.classList.add("animate-shake"); setTimeout(()=>feedbackEl.classList.remove("animate-shake"),500);

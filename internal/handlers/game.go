@@ -93,3 +93,38 @@ func (h *Handler) ScanQR(c *gin.Context) {
 		"group":   g, // directly return updated models.Group
 	})
 }
+
+func (h *Handler) GamePartial(c *gin.Context) {
+	groupID, _ := c.Get("groupID")
+
+	group, err := h.groupService.GetGroupByID(c.Request.Context(), groupID.(int))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get group"})
+		return
+	}
+
+	totalClues, err := h.gameService.GetTotalClues(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch game settings"})
+		return
+	}
+
+	var clueContent string
+	if !group.Completed {
+		clue, err := h.clueService.GetClueByPathwayAndIndex(c.Request.Context(), group.Pathway, group.CurrentClueIdx)
+		if err != nil {
+			clueContent = "No clue found!"
+		} else {
+			clueContent = "Clue: " + clue.Content
+		}
+	} else {
+		clueContent = "Congratulations! You finished! Check out the leaderboard to see your timing"
+	}
+
+	// Render just the partial template for HTMX
+	c.HTML(http.StatusOK, "gamePartial.html", gin.H{
+		"Group":      group,
+		"TotalClues": totalClues,
+		"Clue":       clueContent,
+	})
+}
