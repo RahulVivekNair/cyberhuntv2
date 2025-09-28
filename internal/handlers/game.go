@@ -34,7 +34,7 @@ func (h *Handler) GamePage(c *gin.Context) {
 		clueContent = "Congratulations! You finished! Check out the leaderboard to see your timing"
 	}
 
-	c.HTML(http.StatusOK, "game.html", gin.H{
+	c.HTML(http.StatusOK, "newgame.html", gin.H{
 		"Group":      group,
 		"TotalClues": totalClues,
 		"Clue":       clueContent,
