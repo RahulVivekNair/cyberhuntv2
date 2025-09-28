@@ -1,435 +1,99 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="utf-8">
-  <title>Cyberhunt Game</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Tailwind + DaisyUI -->
-  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="/static/js/html5-qrcode.min.js"></script>
-  <style>
-    /* Prevent FOUC */
-    #completionCelebration { display: none !important; }
-    #completionCelebration:not(.hidden) { display: flex !important; }
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    @keyframes shake { 
-      10%,30%,50%,70%,90%{transform:translateX(-4px)} 
-      20%,40%,60%,80%{transform:translateX(4px)} 
-    }
-    @keyframes bounce { 
-      40%,43%{transform:translateY(-8px)} 
-      70%{transform:translateY(-4px)} 
-      90%{transform:translateY(-2px)} 
-    }
-    @keyframes pulse { 50%{opacity:.7} }
+    <!-- Favicons -->
+    <link rel="icon" href="/static/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+    <link rel="manifest" href="/static/site.webmanifest">
 
-    .animate-shake { animation: shake .5s ease-in-out; }
-    .animate-bounce { animation: bounce 2s infinite; }
-    .animate-pulse { animation: pulse 2s ease-in-out infinite; }
-
-    .card:hover { transform: translateY(-2px); }
-    .btn:hover:not(:disabled) { transform: scale(1.02); }
-
-    .loading-spinner { animation: spin 1s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-spinner:after {
-      content: ""; display:block; width:100%; height:100%;
-      border:2px solid transparent; border-top:2px solid currentColor; border-radius:50%;
-    }
-
-    #scannerContainer { position:relative; max-width:20rem; width:100%; }
-    #scannerOverlay { position:absolute; inset:0; z-index:10; }
-
-    #feedback { min-height:0; }
-  </style>
+    <title>Cyberhunt</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="/static/js/html5-qrcode.min.js"></script>
 </head>
-<body class="min-h-screen bg-base-200 font-sans">
 
-  <!-- Navbar -->
-  <nav class="w-full bg-base-100 shadow-lg py-2 px-4 sm:py-4 sm:px-6 flex justify-between items-center sticky top-0 z-10 rounded-b-2xl">
-    <h1 class="text-xl sm:text-2xl font-bold text-primary hover:scale-105 transition-transform">Cyberhunt</h1>
-    <div class="flex gap-2 sm:gap-4 flex-wrap">
-      <a href="/leaderboard" class="btn btn-outline btn-primary btn-sm hover:scale-105 hover:shadow-lg">Leaderboard</a>
-      <button id="logout" class="btn btn-error btn-sm hover:scale-105 hover:shadow-lg">Logout</button>
-    </div>
-  </nav>
-
-  <div class="container mx-auto p-4 flex flex-col items-center gap-6">
-
-    <!-- Completion Celebration -->
-    <div id="completionCelebration" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div id="celebrationCard" class="card w-full max-w-md bg-gradient-to-br from-success to-primary shadow-2xl rounded-3xl transform scale-0 transition-transform duration-500">
-        <div class="card-body text-center p-8">
-          <div class="text-6xl mb-4 animate-bounce">🎉</div>
-          <h2 class="text-2xl font-bold text-white mb-2">Congratulations!</h2>
-          <p class="text-white/90 mb-4">You've completed all clues! Checkout the leaderboard to see your timing!</p>
-          <button id="closeCelebration" class="btn btn-white btn-outline mt-4 hover:scale-105">Continue</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Group Info & Current Clue -->
-    <div class="card w-full max-w-lg bg-base-100 shadow-xl rounded-2xl hover:shadow-2xl">
-      <div class="card-body flex flex-col items-center gap-4 p-6" id="groupPartial">
-        <div id="groupInfo" class="grid grid-cols-3 gap-2 w-full">
-          <div class="badge badge-outline w-full h-8 text-sm font-semibold px-2 truncate" title="{{.Group.Name}}">
-            <span class="truncate">{{.Group.Name}}</span>
-          </div>
-          <div class="badge badge-outline w-full h-8 text-sm font-semibold px-2 truncate
-            {{if eq .Group.Pathway "blue"}}bg-blue-600 text-white
-            {{else if eq .Group.Pathway "red"}}bg-red-600 text-white
-            {{else if eq .Group.Pathway "green"}}bg-green-600 text-white
-            {{else if eq .Group.Pathway "yellow"}}bg-yellow-400 text-gray-900{{end}}">
-            {{.Group.Pathway}}
-          </div>
-          <div class="badge badge-outline w-full h-8 text-sm font-semibold px-2 truncate
-            {{if .Group.Completed}}bg-success text-white animate-pulse{{end}}">
-            {{if .Group.Completed}}COMPLETE{{else}}Clue: {{.Group.CurrentClueIdx}}/{{.TotalClues}}{{end}}
-          </div>
-        </div>
-        
-        {{if .Group.Completed}}
-        <div class="mt-2 p-6 bg-gradient-to-br from-success/20 to-primary/20 rounded-xl text-center border-2 border-success/30 w-full">
-          <div class="text-4xl mb-3">🏆</div>
-          <h3 class="text-xl font-bold text-success mb-2">Quest Complete!</h3>
-          <p class="text-lg font-medium">Congratulations on completing all clues! Checkout the leaderboard to see your timing!</p>
-        </div>
-        {{else}}
-        <p id="clue" class="w-full p-4 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl text-center text-lg font-medium border border-primary/20">{{.Clue}}</p>
-        {{end}}
-
-        
-      </div>
-      <div id="feedback" class="hidden w-full text-center text-sm font-semibold opacity-0 translate-y-2 transition-all"></div>
-    </div>
-
-    <!-- QR Scanner -->
-    {{if not .Group.Completed}}
-    <div class="card w-full max-w-lg bg-base-100 shadow-xl rounded-2xl hover:shadow-2xl">
-      <div class="card-body flex flex-col items-center gap-4 p-6">
-        <h2 class="text-xl font-bold text-center text-primary">Scan QR Code</h2>
-        <div id="scannerContainer">
-          <div id="reader" class="mx-auto mt-2 w-full max-w-xs rounded-xl overflow-hidden border-2 border-primary/30 shadow-inner"></div>
-          <div id="scannerOverlay" class="absolute inset-0 bg-white/90 backdrop-blur-sm rounded-xl flex items-center justify-center opacity-0 pointer-events-none transition-opacity">
-            <div class="text-center">
-              <div class="loading-spinner loading-lg text-primary mb-2"></div>
-              <p class="text-sm font-medium text-primary">Processing...</p>
+<body>
+    <header>
+        <nav>
+            <h1>Cyberhunt</h1>
+            <div>
+                <a href="/leaderboard">Leaderboard</a>
+                <button id="logout">Logout</button>
             </div>
-          </div>
+        </nav>
+    </header>
+    <main>
+        <div>
+            <div id="groupInfo">
+                <div>{{.Group.Name}}</div>
+                <div>{{.Group.Pathway}}</div>
+                <div>{{if .Group.Completed}}COMPLETE{{else}}Clue: {{.Group.CurrentClueIdx}}/{{.TotalClues}}{{end}}</div>
+            </div>
+            <div id="clue">{{.Clue}}</div>
         </div>
-        <button id="toggleCamera" class="btn btn-outline btn-secondary mt-3 hover:scale-105 hover:shadow-lg">Turn Camera Off</button>
-        <p class="text-xs text-gray-500 text-center mt-2">Point your camera at a QR code to scan</p>
-      </div>
-    </div>
-    {{else}}
-    <div class="card w-full max-w-lg bg-base-100 shadow-xl rounded-2xl opacity-60">
-      <div class="card-body flex flex-col items-center gap-4 p-6">
-        <h2 class="text-xl font-bold text-center text-gray-400">QR Scanner</h2>
-        <div class="mx-auto mt-2 w-full max-w-xs rounded-xl border-2 border-gray-300 bg-gray-100 flex items-center justify-center h-64">
-          <div class="text-center">
-            <div class="text-4xl mb-2 text-gray-400">🔒</div>
-            <p class="text-gray-500 font-medium">Scanner Disabled</p>
-            <p class="text-gray-400 text-sm">Quest Complete!</p>
-          </div>
-        </div>
-        <button class="btn btn-disabled mt-3" disabled>Scanner Inactive</button>
-      </div>
-    </div>
-    {{end}}
-  </div>
+        <div>
+            <h2>Scan QR Code</h2>
+            <div id="reader"></div>
+            <button id="toggleCamera">Turn Camera On</button>
+        </div>"
+    </main>
+    <footer>
+        <p>© 2025 Cyberhunt</p>
+    </footer>
+    <script>
+        qrScanner = new Html5Qrcode("reader");
+        const toggleBtn = document.getElementById("toggleCamera");
+        let cameraOn = false;
 
-  <!-- Logout Confirmation Modal -->
-  <dialog id="logoutModal" class="modal">
-    <div class="modal-box">
-      <h3 class="font-bold text-lg">Confirm Logout</h3>
-      <p class="py-4">Are you sure you want to logout?</p>
-      <div class="modal-action">
-        <button class="btn" onclick="logoutModal.close()">Cancel</button>
-        <button id="confirmLogout" class="btn btn-error">Logout</button>
-      </div>
-    </div>
-  </dialog>
-
-  <script>
-  const feedbackEl = document.getElementById("feedback");
-  const scannerOverlay = document.getElementById("scannerOverlay");
-  // initial server-rendered completion state (true/false)
-  const isCompleted = JSON.parse('{{.Group.Completed}}');
-
-  let isProcessingCode = false, feedbackTimeout = null;
-  let html5QrCode = null, cameraOn = false, scannerPaused = false;
-
-  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
-  // helper to run something after a css transition ends
-  const fadeOutAndRun = (el, cb) => {
-    const handler = () => {
-      el.removeEventListener("transitionend", handler);
-      cb();
-    };
-    el.addEventListener("transitionend", handler);
-  };
-
-  function feedbackColor(type = "info") {
-    return {
-      success: "text-success",
-      error: "text-error",
-      warning: "text-warning",
-      info: "text-info",
-    }[type] || "text-primary";
-  }
-
-  function showFeedback(msg, type = "info", duration = 5000) {
-    clearTimeout(feedbackTimeout);
-    feedbackEl.textContent = msg;
-    feedbackEl.className = `w-full text-center text-sm font-semibold mt-2 ${feedbackColor(type)} opacity-100 translate-y-0 transition-all`;
-    feedbackEl.classList.remove("hidden");
-    feedbackTimeout = setTimeout(hideFeedback, duration);
-  }
-
-  function hideFeedback() {
-    feedbackEl.classList.add("opacity-0", "translate-y-2");
-    feedbackEl.classList.remove("opacity-100", "translate-y-0");
-    fadeOutAndRun(feedbackEl, () => {
-      feedbackEl.classList.add("hidden");
-      feedbackEl.textContent = "";
-      feedbackEl.classList.remove("mt-2");
-    });
-  }
-
-  // Refresh UI fragment (no longer used to detect completion; detection comes from /api/scan response)
-  async function refreshGroupPartial() {
-    try {
-      const res = await fetch("/api/game-partial");
-      const html = await res.text();
-      const container = document.getElementById("groupPartial");
-      if (container) {
-        container.innerHTML = html;
-      }
-      return { ok: true };
-    } catch (err) {
-      console.error("Failed to refresh group partial:", err);
-      showFeedback("⚠️ Could not load new clue. Please refresh manually.", "warning");
-      return { ok: false };
-    }
-  }
-
-  const showOverlay = () => {
-    if (!isCompleted) {
-      scannerOverlay.style.opacity = 1;
-      scannerOverlay.style.pointerEvents = "all";
-    }
-  };
-  const hideOverlay = () => {
-    if (!isCompleted) {
-      scannerOverlay.style.opacity = 0;
-      scannerOverlay.style.pointerEvents = "none";
-    }
-  };
-
-  // Validate using /api/scan response (uses data.group.Completed)
-  async function validateQRCode(code) {
-    try {
-      showFeedback("🔍 Validating code...", "info", 10000);
-      await sleep(600);
-
-      // Pause scanning callbacks but keep the stream alive
-      try {
-        if (html5QrCode && cameraOn) {
-          html5QrCode.pause(); // keep the camera, stop callbacks
-          scannerPaused = true;
-        }
-      } catch (e) {
-        console.warn("pause() warning:", e);
-      }
-
-      const res = await fetch("/api/scan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code }),
-      });
-
-      // parse JSON response
-      const data = await res.json();
-
-      // Use server-provided group completion flag
-      const serverSaysCompleted = !!(data && data.group && data.group.Completed);
-
-      if (data && data.success) {
-        showFeedback("✅ Correct! Moving to next clue...", "success", 3000);
-        feedbackEl.style.transform = "scale(1.05)";
-        setTimeout(() => (feedbackEl.style.transform = ""), 200);
-
-        hideOverlay();
-
-        // Refresh fragment to show new clue/updated UI
-        await refreshGroupPartial();
-
-        if (serverSaysCompleted) {
-          // Quest completed according to server -> stop camera and show celebration
-          try {
-            await stopCamera();
-          } catch (e) {
-            console.warn("stopCamera error", e);
-          }
-          setTimeout(showCelebration, 200);
-        } else {
-          // Not completed: resume scanning so users can scan next QR
-          if (html5QrCode && cameraOn && scannerPaused) {
+        async function startCamera() {
             try {
-              html5QrCode.resume();
-            } catch (e) {
-              console.warn("resume() failed:", e);
+                await qrScanner.start(
+                    { facingMode: "environment" },
+                    { width: 250, height: 250 },
+                    (decodedText) => {
+                        console.log("Scanned:", decodedText);
+                        // TODO: call /api/scan
+                    },
+                    (errMsg) => {
+                        // ignore frequent scan errors
+                    }
+                );
+                console.log("Camera Started");
+                cameraOn = true
+                toggleBtn.textContent = "Turn Camera Off";
+            } catch (err) {
+                console.error("Failed to start camera: ", err)
             }
-            scannerPaused = false;
-          }
         }
 
-        // ready for next scan
-        isProcessingCode = false;
-      } else {
-        // incorrect code path
-        hideOverlay();
-        showFeedback("❌ Incorrect code. Try another!", "error");
-        feedbackEl.classList.add("animate-shake");
-        setTimeout(() => feedbackEl.classList.remove("animate-shake"), 500);
-
-        // resume scanning immediately so user can retry
-        if (html5QrCode && cameraOn && scannerPaused) {
-          try {
-            html5QrCode.resume();
-          } catch (e) {
-            console.warn("resume failed on incorrect", e);
-          }
-          scannerPaused = false;
+        async function stopCamera() {
+            try {
+                await qrScanner.stop();
+                await qrScanner.clear();
+                cameraOn = false;
+                console.log("Camera stopped");
+                toggleBtn.textContent = "Turn Camera On";
+            } catch (err) {
+                console.error("Failed to stop camera:", err);
+            }
         }
 
-        setTimeout(() => (isProcessingCode = false), 500);
-      }
-    } catch (err) {
-      hideOverlay();
-      showFeedback("⚠️ Scan failed. Please try again.", "warning");
-      console.error("validateQRCode error:", err);
+        toggleBtn.addEventListener("click", async () => {
+            if (cameraOn) {
+                await stopCamera();
+            } else {
+                await startCamera();
+            }
+        });
 
-      if (html5QrCode && cameraOn && scannerPaused) {
-        try {
-          html5QrCode.resume();
-        } catch (e) {
-          console.warn("resume failed on error", e);
-        }
-        scannerPaused = false;
-      }
-      setTimeout(() => (isProcessingCode = false), 500);
-    }
-  }
 
-  async function onScanSuccess(decodedText) {
-    if (!isCompleted && !isProcessingCode) {
-      isProcessingCode = true;
-      showOverlay();
-      await validateQRCode(decodedText);
-    }
-  }
-
-  async function startCamera() {
-    try {
-      await html5QrCode.start(
-        { facingMode: "environment" },
-        { fps: 10, aspectRatio: 1.0 },
-        onScanSuccess
-      );
-      cameraOn = true;
-      scannerPaused = false;
-      updateCameraButton(true);
-    } catch (err) {
-      console.error("startCamera failed:", err);
-      showFeedback("⚠️ Unable to start camera!", "warning");
-    }
-  }
-
-  async function stopCamera() {
-    if (html5QrCode && cameraOn) {
-      try {
-        await html5QrCode.stop(); // fully stop and release camera
-      } catch (e) {
-        console.warn("html5QrCode.stop() error:", e);
-      }
-      cameraOn = false;
-      scannerPaused = false;
-      updateCameraButton(false);
-    }
-  }
-
-  function updateCameraButton(on) {
-    const btn = document.getElementById("toggleCamera");
-    if (!btn) return;
-    btn.textContent = on ? "Turn Camera Off" : "Turn Camera On";
-    btn.classList.toggle("btn-outline", !on);
-    btn.classList.toggle("btn-secondary", on);
-  }
-
-  // Toggle camera on/off (explicit user intent)
-  document.getElementById("toggleCamera")?.addEventListener("click", async (e) => {
-    const btn = e.target;
-    btn.disabled = true;
-    btn.style.opacity = 0.7;
-    isProcessingCode = false;
-    hideOverlay();
-
-    try {
-      if (cameraOn) {
-        await stopCamera();
-      } else {
-        if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
-        await startCamera();
-      }
-    } finally {
-      btn.disabled = false;
-      btn.style.opacity = 1;
-    }
-  });
-
-  // Initialize scanner on page load (unless already completed)
-  if (!isCompleted) {
-    html5QrCode = new Html5Qrcode("reader");
-    setTimeout(startCamera, 500);
-  } else {
-    setTimeout(showCelebration, 500);
-  }
-
-  // Celebration modal handlers
-  function showCelebration() {
-    const c = document.getElementById("completionCelebration"),
-      card = document.getElementById("celebrationCard");
-    if (!c || !card) return;
-    c.classList.remove("hidden");
-    setTimeout(() => (card.style.transform = "scale(1)"), 100);
-  }
-  document.getElementById("closeCelebration")?.addEventListener("click", () => {
-    const c = document.getElementById("completionCelebration"),
-      card = document.getElementById("celebrationCard");
-    if (!c || !card) return;
-    card.style.transform = "scale(0)";
-    setTimeout(() => c.classList.add("hidden"), 300);
-  });
-
-  // Logout / beforeunload cleanup
-  document.getElementById("logout")?.addEventListener("click", (e) => {
-    e.preventDefault();
-    document.getElementById("logoutModal").showModal();
-  });
-  document.getElementById("confirmLogout")?.addEventListener("click", async () => {
-    document.getElementById("logoutModal").close();
-    try { await stopCamera(); } catch (e) { console.warn("stop on logout:", e); }
-    await fetch("/logout", { method: "POST" });
-    location.href = "/login";
-  });
-
-  window.addEventListener("beforeunload", () => {
-    try { if (html5QrCode && cameraOn) html5QrCode.stop(); } catch (e) { /* noop */ }
-  });
-</script>
-
+    </script>
 </body>
+
 </html>
