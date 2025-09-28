@@ -152,137 +152,284 @@
   </dialog>
 
   <script>
-    const feedbackEl = document.getElementById("feedback");
-    const scannerOverlay = document.getElementById("scannerOverlay");
-    const isCompleted = JSON.parse('{{.Group.Completed}}');
-    let isProcessingCode = false, feedbackTimeout = null;
-    let html5QrCode = null, cameraOn = false;
+  const feedbackEl = document.getElementById("feedback");
+  const scannerOverlay = document.getElementById("scannerOverlay");
+  // initial server-rendered completion state (true/false)
+  const isCompleted = JSON.parse('{{.Group.Completed}}');
 
-    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-    const fadeOutAndRun = (el, cb) => {
-      const handler = () => { el.removeEventListener("transitionend", handler); cb(); };
-      el.addEventListener("transitionend", handler);
+  let isProcessingCode = false, feedbackTimeout = null;
+  let html5QrCode = null, cameraOn = false, scannerPaused = false;
+
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  // helper to run something after a css transition ends
+  const fadeOutAndRun = (el, cb) => {
+    const handler = () => {
+      el.removeEventListener("transitionend", handler);
+      cb();
     };
+    el.addEventListener("transitionend", handler);
+  };
 
-    const feedbackColor = (type="info") => ({
-      success:"text-success", error:"text-error", warning:"text-warning", info:"text-info"
-    }[type] || "text-primary");
-
-    function showFeedback(msg, type="info", duration=5000) {
-      clearTimeout(feedbackTimeout);
-      feedbackEl.textContent = msg;
-      feedbackEl.className = `w-full text-center text-sm font-semibold mt-2 ${feedbackColor(type)} opacity-100 translate-y-0 transition-all`;
-      feedbackEl.classList.remove("hidden");
-      feedbackTimeout = setTimeout(hideFeedback, duration);
-    }
-
-    function hideFeedback() {
-      feedbackEl.classList.add("opacity-0","translate-y-2");
-      feedbackEl.classList.remove("opacity-100","translate-y-0");
-      fadeOutAndRun(feedbackEl, () => {
-        feedbackEl.classList.add("hidden"); feedbackEl.textContent=""; feedbackEl.classList.remove("mt-2");
-      });
-    }
-
-    const showOverlay = () => { if (!isCompleted) { scannerOverlay.style.opacity=1; scannerOverlay.style.pointerEvents="all"; } };
-    const hideOverlay = () => { if (!isCompleted) { scannerOverlay.style.opacity=0; scannerOverlay.style.pointerEvents="none"; } };
-
-    async function refreshGroupPartial() {
-  try {
-    const res = await fetch("/api/game-partial");
-    const html = await res.text();
-    const container = document.getElementById("groupPartial");
-    if (container) {
-      container.innerHTML = html;
-    }
-  } catch (err) {
-    console.error("Failed to refresh group partial:", err);
-    showFeedback("⚠️ Could not load new clue. Please refresh manually.", "warning");
+  function feedbackColor(type = "info") {
+    return {
+      success: "text-success",
+      error: "text-error",
+      warning: "text-warning",
+      info: "text-info",
+    }[type] || "text-primary";
   }
-}
 
-    async function validateQRCode(code) {
+  function showFeedback(msg, type = "info", duration = 5000) {
+    clearTimeout(feedbackTimeout);
+    feedbackEl.textContent = msg;
+    feedbackEl.className = `w-full text-center text-sm font-semibold mt-2 ${feedbackColor(type)} opacity-100 translate-y-0 transition-all`;
+    feedbackEl.classList.remove("hidden");
+    feedbackTimeout = setTimeout(hideFeedback, duration);
+  }
+
+  function hideFeedback() {
+    feedbackEl.classList.add("opacity-0", "translate-y-2");
+    feedbackEl.classList.remove("opacity-100", "translate-y-0");
+    fadeOutAndRun(feedbackEl, () => {
+      feedbackEl.classList.add("hidden");
+      feedbackEl.textContent = "";
+      feedbackEl.classList.remove("mt-2");
+    });
+  }
+
+  // Refresh UI fragment (no longer used to detect completion; detection comes from /api/scan response)
+  async function refreshGroupPartial() {
+    try {
+      const res = await fetch("/api/game-partial");
+      const html = await res.text();
+      const container = document.getElementById("groupPartial");
+      if (container) {
+        container.innerHTML = html;
+      }
+      return { ok: true };
+    } catch (err) {
+      console.error("Failed to refresh group partial:", err);
+      showFeedback("⚠️ Could not load new clue. Please refresh manually.", "warning");
+      return { ok: false };
+    }
+  }
+
+  const showOverlay = () => {
+    if (!isCompleted) {
+      scannerOverlay.style.opacity = 1;
+      scannerOverlay.style.pointerEvents = "all";
+    }
+  };
+  const hideOverlay = () => {
+    if (!isCompleted) {
+      scannerOverlay.style.opacity = 0;
+      scannerOverlay.style.pointerEvents = "none";
+    }
+  };
+
+  // Validate using /api/scan response (uses data.group.Completed)
+  async function validateQRCode(code) {
+    try {
+      showFeedback("🔍 Validating code...", "info", 10000);
+      await sleep(600);
+
+      // Pause scanning callbacks but keep the stream alive
       try {
-        showFeedback("🔍 Validating code...", "info", 10000);
-        await sleep(800);
-        const res = await fetch("/api/scan", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code})});
-        const data = await res.json();
-
-        if (data.success) {
-          showFeedback("✅ Correct! Moving to next clue...", "success", 3000);
-          feedbackEl.style.transform="scale(1.05)"; setTimeout(()=>feedbackEl.style.transform="",200);
-
-          await stopCamera(); hideOverlay();
-          setTimeout(refreshGroupPartial, 1200);
-        } else {
-          hideOverlay(); showFeedback("❌ Incorrect code. Try another!","error");
-          feedbackEl.classList.add("animate-shake"); setTimeout(()=>feedbackEl.classList.remove("animate-shake"),500);
-          setTimeout(()=>isProcessingCode=false,1500);
+        if (html5QrCode && cameraOn) {
+          html5QrCode.pause(); // keep the camera, stop callbacks
+          scannerPaused = true;
         }
-      } catch (err) {
-        hideOverlay(); showFeedback("⚠️ Scan failed. Please try again.","warning");
-        setTimeout(()=>isProcessingCode=false,1500);
+      } catch (e) {
+        console.warn("pause() warning:", e);
       }
-    }
 
-    async function onScanSuccess(decodedText) {
-      if (!isCompleted && !isProcessingCode) {
-        isProcessingCode=true; showOverlay(); validateQRCode(decodedText);
-      }
-    }
-
-    async function startCamera() {
-      try {
-        await html5QrCode.start({ facingMode:"environment" }, { fps:10, aspectRatio:1.0 }, onScanSuccess);
-        cameraOn=true; updateCameraButton(true);
-      } catch { showFeedback("⚠️ Unable to start camera!","warning"); }
-    }
-
-    async function stopCamera() {
-      if (html5QrCode && cameraOn) {
-        await html5QrCode.stop(); cameraOn=false; updateCameraButton(false);
-      }
-    }
-
-    function updateCameraButton(on) {
-      const btn=document.getElementById("toggleCamera");
-      if (!btn) return;
-      btn.textContent=on?"Turn Camera Off":"Turn Camera On";
-      btn.classList.toggle("btn-outline",!on);
-      btn.classList.toggle("btn-secondary",on);
-    }
-
-    if (isCompleted) setTimeout(showCelebration,500);
-    else {
-      html5QrCode=new Html5Qrcode("reader");
-      setTimeout(startCamera,500);
-      document.getElementById("toggleCamera").addEventListener("click", async e=>{
-        e.target.disabled=true; e.target.style.opacity=0.7;
-        isProcessingCode=false; hideOverlay();
-        cameraOn?await stopCamera():await startCamera();
-        e.target.disabled=false; e.target.style.opacity=1;
+      const res = await fetch("/api/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
       });
+
+      // parse JSON response
+      const data = await res.json();
+
+      // Use server-provided group completion flag
+      const serverSaysCompleted = !!(data && data.group && data.group.Completed);
+
+      if (data && data.success) {
+        showFeedback("✅ Correct! Moving to next clue...", "success", 3000);
+        feedbackEl.style.transform = "scale(1.05)";
+        setTimeout(() => (feedbackEl.style.transform = ""), 200);
+
+        hideOverlay();
+
+        // Refresh fragment to show new clue/updated UI
+        await refreshGroupPartial();
+
+        if (serverSaysCompleted) {
+          // Quest completed according to server -> stop camera and show celebration
+          try {
+            await stopCamera();
+          } catch (e) {
+            console.warn("stopCamera error", e);
+          }
+          setTimeout(showCelebration, 200);
+        } else {
+          // Not completed: resume scanning so users can scan next QR
+          if (html5QrCode && cameraOn && scannerPaused) {
+            try {
+              html5QrCode.resume();
+            } catch (e) {
+              console.warn("resume() failed:", e);
+            }
+            scannerPaused = false;
+          }
+        }
+
+        // ready for next scan
+        isProcessingCode = false;
+      } else {
+        // incorrect code path
+        hideOverlay();
+        showFeedback("❌ Incorrect code. Try another!", "error");
+        feedbackEl.classList.add("animate-shake");
+        setTimeout(() => feedbackEl.classList.remove("animate-shake"), 500);
+
+        // resume scanning immediately so user can retry
+        if (html5QrCode && cameraOn && scannerPaused) {
+          try {
+            html5QrCode.resume();
+          } catch (e) {
+            console.warn("resume failed on incorrect", e);
+          }
+          scannerPaused = false;
+        }
+
+        setTimeout(() => (isProcessingCode = false), 500);
+      }
+    } catch (err) {
+      hideOverlay();
+      showFeedback("⚠️ Scan failed. Please try again.", "warning");
+      console.error("validateQRCode error:", err);
+
+      if (html5QrCode && cameraOn && scannerPaused) {
+        try {
+          html5QrCode.resume();
+        } catch (e) {
+          console.warn("resume failed on error", e);
+        }
+        scannerPaused = false;
+      }
+      setTimeout(() => (isProcessingCode = false), 500);
     }
+  }
 
-    function showCelebration() {
-      const c=document.getElementById("completionCelebration"), card=document.getElementById("celebrationCard");
-      c.classList.remove("hidden"); setTimeout(()=>card.style.transform="scale(1)",100);
+  async function onScanSuccess(decodedText) {
+    if (!isCompleted && !isProcessingCode) {
+      isProcessingCode = true;
+      showOverlay();
+      await validateQRCode(decodedText);
     }
-    document.getElementById("closeCelebration")?.addEventListener("click",()=>{
-      const c=document.getElementById("completionCelebration"), card=document.getElementById("celebrationCard");
-      card.style.transform="scale(0)"; setTimeout(()=>c.classList.add("hidden"),300);
-    });
+  }
 
-    document.getElementById("logout").addEventListener("click",e=>{
-      e.preventDefault(); document.getElementById("logoutModal").showModal();
-    });
+  async function startCamera() {
+    try {
+      await html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 10, aspectRatio: 1.0 },
+        onScanSuccess
+      );
+      cameraOn = true;
+      scannerPaused = false;
+      updateCameraButton(true);
+    } catch (err) {
+      console.error("startCamera failed:", err);
+      showFeedback("⚠️ Unable to start camera!", "warning");
+    }
+  }
 
-    document.getElementById("confirmLogout").addEventListener("click",async ()=>{
-      document.getElementById("logoutModal").close(); await stopCamera();
-      await fetch("/logout",{method:"POST"}); location.href="/login";
-    });
+  async function stopCamera() {
+    if (html5QrCode && cameraOn) {
+      try {
+        await html5QrCode.stop(); // fully stop and release camera
+      } catch (e) {
+        console.warn("html5QrCode.stop() error:", e);
+      }
+      cameraOn = false;
+      scannerPaused = false;
+      updateCameraButton(false);
+    }
+  }
 
-    window.addEventListener("beforeunload",()=>{ if(html5QrCode&&cameraOn) stopCamera(); });
-  </script>
+  function updateCameraButton(on) {
+    const btn = document.getElementById("toggleCamera");
+    if (!btn) return;
+    btn.textContent = on ? "Turn Camera Off" : "Turn Camera On";
+    btn.classList.toggle("btn-outline", !on);
+    btn.classList.toggle("btn-secondary", on);
+  }
+
+  // Toggle camera on/off (explicit user intent)
+  document.getElementById("toggleCamera")?.addEventListener("click", async (e) => {
+    const btn = e.target;
+    btn.disabled = true;
+    btn.style.opacity = 0.7;
+    isProcessingCode = false;
+    hideOverlay();
+
+    try {
+      if (cameraOn) {
+        await stopCamera();
+      } else {
+        if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
+        await startCamera();
+      }
+    } finally {
+      btn.disabled = false;
+      btn.style.opacity = 1;
+    }
+  });
+
+  // Initialize scanner on page load (unless already completed)
+  if (!isCompleted) {
+    html5QrCode = new Html5Qrcode("reader");
+    setTimeout(startCamera, 500);
+  } else {
+    setTimeout(showCelebration, 500);
+  }
+
+  // Celebration modal handlers
+  function showCelebration() {
+    const c = document.getElementById("completionCelebration"),
+      card = document.getElementById("celebrationCard");
+    if (!c || !card) return;
+    c.classList.remove("hidden");
+    setTimeout(() => (card.style.transform = "scale(1)"), 100);
+  }
+  document.getElementById("closeCelebration")?.addEventListener("click", () => {
+    const c = document.getElementById("completionCelebration"),
+      card = document.getElementById("celebrationCard");
+    if (!c || !card) return;
+    card.style.transform = "scale(0)";
+    setTimeout(() => c.classList.add("hidden"), 300);
+  });
+
+  // Logout / beforeunload cleanup
+  document.getElementById("logout")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    document.getElementById("logoutModal").showModal();
+  });
+  document.getElementById("confirmLogout")?.addEventListener("click", async () => {
+    document.getElementById("logoutModal").close();
+    try { await stopCamera(); } catch (e) { console.warn("stop on logout:", e); }
+    await fetch("/logout", { method: "POST" });
+    location.href = "/login";
+  });
+
+  window.addEventListener("beforeunload", () => {
+    try { if (html5QrCode && cameraOn) html5QrCode.stop(); } catch (e) { /* noop */ }
+  });
+</script>
+
 </body>
 </html>
