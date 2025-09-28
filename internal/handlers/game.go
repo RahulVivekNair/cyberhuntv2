@@ -90,7 +90,12 @@ func (h *Handler) ScanQR(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Correct QR code",
-		"group":   g, // directly return updated models.Group
+		"group": gin.H{
+			"Name":           g.Name,
+			"Pathway":        g.Pathway,
+			"CurrentClueIdx": g.CurrentClueIdx,
+			"Completed":      g.Completed,
+		},
 	})
 }
 
