@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyberhunt</title>
 
     <!-- Favicons -->
     <link rel="icon" href="/static/favicon.ico">
@@ -12,41 +13,57 @@
     <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
     <link rel="manifest" href="/static/site.webmanifest">
 
-    <title>Cyberhunt</title>
     <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="/static/js/html5-qrcode.min.js"></script>
 </head>
 
-<body>
-    <header>
-        <nav>
-            <h1>Cyberhunt</h1>
-            <div>
-                <a href="/leaderboard">Leaderboard</a>
-                <button id="logout">Logout</button>
-            </div>
-        </nav>
-    </header>
-    <main>
-        <div>
-            <div id="groupInfo">
-                <div>{{.Group.Name}}</div>
-                <div>{{.Group.Pathway}}</div>
-                <div id="clueProgress">{{if .Group.Completed}}COMPLETE{{else}}Clue:
-                    {{.Group.CurrentClueIdx}}/{{.TotalClues}}{{end}}</div>
-            </div>
-            <div id="clue">{{.Clue}}</div>
+<body class="min-h-screen bg-base-200 font-sans">
+    <nav class="navbar bg-base-100 shadow-lg sticky top-0 z-40">
+        <div class="flex-1">
+            <h1 class="text-xl sm:text-2xl font-bold text-primary">Cyberhunt</h1>
         </div>
-        <div>
-            <h2>Scan QR Code</h2>
-            <div id="reader"></div>
-            <button id="toggleCamera">Turn Camera On</button>
+        <div class="flex-none gap-2">
+            <a href="/leaderboard" class="btn btn-outline btn-primary btn-sm">Leaderboard</a>
+            <button id="logout" class="btn btn-error btn-sm">Logout</button>
+        </div>
+    </nav>
+
+    <main class="container mx-auto p-4 max-w-2xl space-y-4">
+        <!-- Group Info Card -->
+        <div class="card bg-base-100 shadow-xl rounded-2xl">
+            <div class="card-body">
+                
+                <div id="groupInfo" class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div class="badge badge-outline badge-lg w-full justify-center">{{.Group.Name}}</div>
+                    <div class="badge badge-outline badge-lg w-full justify-center">{{.Group.Pathway}}</div>
+                    <div id="clueProgress" class="badge badge-outline badge-lg w-full justify-center">
+                        {{if .Group.Completed}}COMPLETE{{else}}Clue: {{.Group.CurrentClueIdx}}/{{.TotalClues}}{{end}}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Clue Card -->
+        <div class="card bg-base-100 shadow-xl rounded-2xl">
+            <div class="card-body">
+            
+                <div id="clue" class="p-4 bg-base-200 rounded-lg  text-center text-lg font-medium">
+                    {{.Clue}}
+                </div>
+            </div>
+        </div>
+
+        <!-- QR Scanner Card -->
+        <div class="card bg-base-100 shadow-xl rounded-2xl">
+            <div class="card-body items-center">
+                <h2 class="card-title">Scan QR Code</h2>
+                <div id="reader" class="hidden w-full max-w-sm mx-auto rounded-lg aspect-square bg-base-200"></div>
+                <button id="toggleCamera" class="btn btn-secondary  mt-2">Turn Camera On</button>
+                 <p class="text-xs text-gray-500 text-center mt-2">Point your camera at a QR code to scan</p>
+            </div>
         </div>
     </main>
-    <footer>
-        <p>© 2025 Cyberhunt</p>
-    </footer>
     <script>
         qrScanner = new Html5Qrcode("reader");
         const toggleBtn = document.getElementById("toggleCamera");
@@ -54,9 +71,10 @@
 
         async function startCamera() {
             try {
+                document.getElementById("reader").classList.remove("hidden");
                 await qrScanner.start(
                     { facingMode: "environment" },
-                    { fps: 10, qrbox: { width: 250, height: 250 }},
+                    { fps: 1 , aspectRatio: 1},
                     validateQRCode,
                     (errMsg) => {
                         // ignore frequent scan errors
@@ -72,6 +90,7 @@
 
         async function stopCamera() {
             try {
+                document.getElementById("reader").classList.add("hidden");
                 await qrScanner.stop();
                 await qrScanner.clear();
                 cameraOn = false;
@@ -92,7 +111,6 @@
 
         async function validateQRCode(decodedText) {
             try {
-                await qrScanner.pause();
                 const res = await fetch("/api/scan", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -111,14 +129,6 @@
                 }
             } catch (err) {
                 console.error("Failed to validate scan:", err);
-            } finally {
-                setTimeout(async () => {
-                    try {
-                        await qrScanner.resume();
-                    } catch (err) {
-                        console.warn("Resume failed:", err);
-                    }
-                }, 500);
             }
         }
 
