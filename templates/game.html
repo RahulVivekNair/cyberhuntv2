@@ -59,7 +59,8 @@
         <div class="card bg-base-100 shadow-xl rounded-2xl">
             <div class="card-body items-center">
                 <h2 class="card-title">Scan QR Code</h2>
-                <div id="reader" class="hidden w-full max-w-sm mx-auto rounded-lg aspect-square bg-base-200 overflow-hidden">
+                <div id="reader"
+                    class="hidden w-full max-w-sm mx-auto rounded-lg aspect-square bg-base-200 overflow-hidden">
                     <video id="qr-video" class="w-full h-full object-cover"></video>
                 </div>
                 <button id="toggleCamera" class="btn btn-secondary  mt-2">Turn Camera On</button>
@@ -86,6 +87,12 @@
                 document.getElementById("reader").classList.remove("hidden");
                 // QrScanner uses its own start() signature — no facingMode / fps here
                 await qrScanner.start();
+                const cameras = await QrScanner.listCameras(true);
+                const backCam = cameras.find(cam => /back|rear|environment/i.test(cam.label));
+                if (backCam) {
+                    await qrScanner.setCamera(backCam.id);
+                }
+
                 console.log("Camera Started");
                 cameraOn = true;
                 toggleBtn.textContent = "Turn Camera Off";
