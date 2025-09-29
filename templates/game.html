@@ -42,7 +42,7 @@
             <h2>Scan QR Code</h2>
             <div id="reader"></div>
             <button id="toggleCamera">Turn Camera On</button>
-        </div>"
+        </div>
     </main>
     <footer>
         <p>© 2025 Cyberhunt</p>
@@ -56,7 +56,7 @@
             try {
                 await qrScanner.start(
                     { facingMode: "environment" },
-                    { width: 250, height: 250 },
+                    { fps: 10, qrbox: { width: 250, height: 250 }},
                     validateQRCode,
                     (errMsg) => {
                         // ignore frequent scan errors
