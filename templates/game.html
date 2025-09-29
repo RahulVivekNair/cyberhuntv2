@@ -15,7 +15,8 @@
 
     <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script src="/static/js/html5-qrcode.min.js"></script>
+    <!-- <script src="/static/js/html5-qrcode.min.js"></script> -->
+    <script src="/static/js/qr-scanner.min.js"></script>
 </head>
 
 <body class="min-h-screen bg-base-200 font-sans">
@@ -33,7 +34,7 @@
         <!-- Group Info Card -->
         <div class="card bg-base-100 shadow-xl rounded-2xl">
             <div class="card-body">
-                
+
                 <div id="groupInfo" class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <div class="badge badge-outline badge-lg w-full justify-center">{{.Group.Name}}</div>
                     <div class="badge badge-outline badge-lg w-full justify-center">{{.Group.Pathway}}</div>
@@ -47,7 +48,7 @@
         <!-- Clue Card -->
         <div class="card bg-base-100 shadow-xl rounded-2xl">
             <div class="card-body">
-            
+
                 <div id="clue" class="p-4 bg-base-200 rounded-lg  text-center text-lg font-medium">
                     {{.Clue}}
                 </div>
@@ -58,41 +59,46 @@
         <div class="card bg-base-100 shadow-xl rounded-2xl">
             <div class="card-body items-center">
                 <h2 class="card-title">Scan QR Code</h2>
-                <div id="reader" class="hidden w-full max-w-sm mx-auto rounded-lg aspect-square bg-base-200"></div>
+                <div id="reader" class="hidden w-full max-w-sm mx-auto rounded-lg aspect-square bg-base-200">
+                    <video id="qr-video" playsinline muted style="width:100%; height:100%; object-fit:cover;"></video>
+                </div>
                 <button id="toggleCamera" class="btn btn-secondary  mt-2">Turn Camera On</button>
-                 <p class="text-xs text-gray-500 text-center mt-2">Point your camera at a QR code to scan</p>
+                <p class="text-xs text-gray-500 text-center mt-2">Point your camera at a QR code to scan</p>
             </div>
         </div>
     </main>
     <script>
-        qrScanner = new Html5Qrcode("reader");
+        const videoElem = document.getElementById("qr-video")
+        const qrScanner = new QrScanner(
+            videoElem,
+            result => validateQRCode(result.data),
+            {
+                preferredCamera: 'environment',
+                maxScansPerSecond: 1,
+                returnDetailedScanResult: false
+            }
+        );
         const toggleBtn = document.getElementById("toggleCamera");
         let cameraOn = false;
 
         async function startCamera() {
             try {
                 document.getElementById("reader").classList.remove("hidden");
-                await qrScanner.start(
-                    { facingMode: "environment" },
-                    { fps: 1 , aspectRatio: 1},
-                    validateQRCode,
-                    (errMsg) => {
-                        // ignore frequent scan errors
-                    }
-                );
+                // QrScanner uses its own start() signature — no facingMode / fps here
+                await qrScanner.start();
                 console.log("Camera Started");
-                cameraOn = true
+                cameraOn = true;
                 toggleBtn.textContent = "Turn Camera Off";
             } catch (err) {
-                console.error("Failed to start camera: ", err)
+                console.error("Failed to start camera: ", err);
             }
         }
 
         async function stopCamera() {
             try {
-                document.getElementById("reader").classList.add("hidden");
                 await qrScanner.stop();
-                await qrScanner.clear();
+                // don't call qrScanner.clear() — that was Html5Qrcode API
+                document.getElementById("reader").classList.add("hidden");
                 cameraOn = false;
                 console.log("Camera stopped");
                 toggleBtn.textContent = "Turn Camera On";
