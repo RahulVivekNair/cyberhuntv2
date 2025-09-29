@@ -92,6 +92,7 @@
 
         async function validateQRCode(decodedText) {
             try {
+                await qrScanner.pause();
                 const res = await fetch("/api/scan", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -110,6 +111,14 @@
                 }
             } catch (err) {
                 console.error("Failed to validate scan:", err);
+            } finally {
+                setTimeout(async () => {
+                    try {
+                        await qrScanner.resume();
+                    } catch (err) {
+                        console.warn("Resume failed:", err);
+                    }
+                }, 500);
             }
         }
 
