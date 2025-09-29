@@ -26,7 +26,7 @@
         </div>
         <div class="flex-none gap-2">
             <a href="/leaderboard" class="btn btn-outline btn-primary btn-sm">Leaderboard</a>
-            <button id="logout" class="btn btn-error btn-sm">Logout</button>
+            <button id="logout" class="btn btn-error btn-sm" onclick="logoutModal.showModal()">Logout</button>
         </div>
     </nav>
 
@@ -68,6 +68,26 @@
             </div>
         </div>
     </main>
+
+    <dialog id="logoutModal" class="modal">
+        <div class="modal-box">
+            <h3 class="text-lg font-bold">Confirm Logout</h3>
+            <p class="py-2">Are you sure you want to log out?</p>
+            <div class="modal-action">
+                <!-- Cancel closes the modal -->
+                <form method="dialog">
+                    <button class="btn">Cancel</button>
+                </form>
+                <!-- Logout triggers logout -->
+                <button id="confirmLogout" class="btn btn-error">Logout</button>
+            </div>
+        </div>
+
+        <!-- Clicking outside closes the modal -->
+        <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+        </form>
+    </dialog>
     <script>
         const videoElem = document.getElementById("qr-video")
         const qrScanner = new QrScanner(
@@ -162,6 +182,32 @@
             }
         }
 
+        async function cleanupScanner() {
+            try {
+                await stopCamera();
+                if (qrScanner) {
+                    qrScanner.destroy();
+                    qrScanner = null;
+                }
+            } catch (e) {
+                console.warn("scanner cleanup failed:", e);
+            }
+        }
+
+        async function doLogout() {
+            await cleanupScanner();
+            try {
+                await fetch("/logout", { method: "POST" });
+            } catch (e) {
+                console.error("Logout request failed:", e);
+            }
+            location.href = "/login";
+        }
+
+        document.getElementById("confirmLogout")?.addEventListener("click", async () => {
+            document.getElementById("logoutModal").close();
+            await doLogout();
+        });
     </script>
 </body>
 
