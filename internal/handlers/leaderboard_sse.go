@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"sync"
@@ -11,6 +10,33 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+//
+// ==== Payload Types ====
+//
+
+type LeaderboardEntry struct {
+	ID             int     `json:"id"`
+	Rank           int     `json:"rank"`
+	Name           string  `json:"name"`
+	Pathway        string  `json:"pathway"`
+	CurrentClueIdx int     `json:"current_clue_idx"`
+	Completed      bool    `json:"completed"`
+	TotalTime      *string `json:"total_time,omitempty"` // null if ongoing
+	Badge          string  `json:"badge,omitempty"`
+}
+
+type LeaderboardPayload struct {
+	Groups      []LeaderboardEntry `json:"groups"`
+	TotalClues  int                `json:"totalClues"`
+	TotalGroups int                `json:"totalGroups"`
+	Completed   int                `json:"completed"`
+	InProgress  int                `json:"inProgress"`
+}
+
+//
+// ==== Hub Implementation ====
+//
 
 type LeaderboardHub struct {
 	mu        sync.RWMutex
@@ -35,7 +61,7 @@ func (h *LeaderboardHub) run() {
 		for ch := range h.clients {
 			select {
 			case ch <- payload:
-			default:
+			default: // drop if client is slow
 			}
 		}
 		h.mu.Unlock()
@@ -45,53 +71,46 @@ func (h *LeaderboardHub) run() {
 func (h *LeaderboardHub) Broadcast(payload []byte) {
 	select {
 	case h.broadcast <- payload:
-	default:
+	default: // if buffer full, overwrite cache directly
 		h.mu.Lock()
 		h.cache = payload
 		h.mu.Unlock()
 	}
 }
 
-func (h *LeaderboardHub) AddClient(ctx context.Context) (ch <-chan []byte, cancel func()) {
+func (h *LeaderboardHub) AddClient(ctx context.Context) (<-chan []byte, func()) {
 	clientCh := make(chan []byte, 1)
 
 	h.mu.Lock()
 	h.clients[clientCh] = struct{}{}
 	if len(h.cache) > 0 {
-		clientCh <- h.cache
+		clientCh <- h.cache // send last snapshot immediately
 	}
 	h.mu.Unlock()
 
-	done := make(chan struct{})
-	closed := false
-
+	var once sync.Once
 	cancelFn := func() {
-		h.mu.Lock()
-		if _, ok := h.clients[clientCh]; ok && !closed {
+		once.Do(func() {
+			h.mu.Lock()
 			delete(h.clients, clientCh)
 			close(clientCh)
-			closed = true
-		}
-		h.mu.Unlock()
-
-		if !closed {
-			close(done)
-			closed = true
-		}
+			h.mu.Unlock()
+		})
 	}
 
+	// Auto-remove client when ctx closes
 	go func() {
-		select {
-		case <-ctx.Done():
-			cancelFn()
-		case <-done:
-		}
+		<-ctx.Done()
+		cancelFn()
 	}()
 
 	return clientCh, cancelFn
 }
 
-// SSE endpoint
+//
+// ==== SSE Endpoint ====
+//
+
 func (h *Handler) LeaderboardStream(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "text/event-stream")
 	c.Writer.Header().Set("Cache-Control", "no-cache")
@@ -109,10 +128,17 @@ func (h *Handler) LeaderboardStream(c *gin.Context) {
 
 	c.Status(http.StatusOK)
 
+	// Keepalive pings every 15s
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():
 			return
+		case <-ticker.C:
+			fmt.Fprintf(c.Writer, ": keepalive\n\n")
+			flusher.Flush()
 		case payload, ok := <-clientCh:
 			if !ok {
 				return
@@ -123,59 +149,75 @@ func (h *Handler) LeaderboardStream(c *gin.Context) {
 	}
 }
 
-// BroadcastLeaderboard builds leaderboard JSON and sends it
+//
+// ==== Broadcast Builder ====
+//
+
 func (h *Handler) BroadcastLeaderboard(ctx context.Context) error {
 	totalClues, groups, err := h.groupService.GetLeaderboardData(ctx)
 	if err != nil {
-		return errors.New("failed to fetch leaderboard") // generic for client
+		return fmt.Errorf("get leaderboard data: %w", err)
 	}
 
-	// Get game start time for calculating total_time
 	settings, err := h.gameService.GetGameStatus(ctx)
 	var startTime *time.Time
 	if err == nil && settings.StartTime != nil {
 		startTime = settings.StartTime
 	}
 
-	var out []map[string]interface{}
+	var out []LeaderboardEntry
 	rank := 1
 	for _, group := range groups {
-		entry := map[string]interface{}{
-			"id":               group.ID,
-			"rank":             rank,
-			"name":             group.Name,
-			"pathway":          group.Pathway,
-			"current_clue_idx": group.CurrentClueIdx,
-			"completed":        group.Completed,
+		entry := LeaderboardEntry{
+			ID:             group.ID,
+			Rank:           rank,
+			Name:           group.Name,
+			Pathway:        group.Pathway,
+			CurrentClueIdx: group.CurrentClueIdx,
+			Completed:      group.Completed,
 		}
 
-		// Calculate total_time for completed groups
+		// Add total_time if completed
 		if group.Completed && group.EndTime != nil && startTime != nil {
 			duration := group.EndTime.Sub(*startTime)
-			minutes := int(duration.Minutes())
-			seconds := int(duration.Seconds()) % 60
-			entry["total_time"] = fmt.Sprintf("%d:%02d", minutes, seconds)
-		} else {
-			entry["total_time"] = nil
+			totalSeconds := int(duration.Seconds())
+			hh := totalSeconds / 3600
+			mm := (totalSeconds % 3600) / 60
+			ss := totalSeconds % 60
+			formatted := fmt.Sprintf("%02d:%02d:%02d", hh, mm, ss)
+			entry.TotalTime = &formatted
 		}
 
+		// Assign medal badges for top 3
 		switch rank {
 		case 1:
-			entry["badge"] = "🥇"
+			entry.Badge = "🥇"
 		case 2:
-			entry["badge"] = "🥈"
+			entry.Badge = "🥈"
 		case 3:
-			entry["badge"] = "🥉"
+			entry.Badge = "🥉"
 		}
+
 		out = append(out, entry)
 		rank++
 	}
 
-	payload, _ := json.Marshal(gin.H{
-		"groups":     out,
-		"totalClues": totalClues,
-	})
+	completed := 0
+	for _, group := range groups {
+		if group.Completed {
+			completed++
+		}
+	}
 
-	h.LeaderboardHub.Broadcast(payload)
+	payload := LeaderboardPayload{
+		Groups:      out,
+		TotalClues:  totalClues,
+		TotalGroups: len(groups),
+		Completed:   completed,
+		InProgress:  len(groups) - completed,
+	}
+
+	jsonBytes, _ := json.Marshal(payload)
+	h.LeaderboardHub.Broadcast(jsonBytes)
 	return nil
 }

@@ -106,6 +106,35 @@
     </form>
   </dialog>
   <script>
+
+    const startSSE = () => {
+      const es = new EventSource("/api/leaderboard/stream");
+
+      es.onmessage = (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          renderStats(data);
+          console.log("Leaderboard update:", data);
+        } catch (err) {
+          console.error("Invalid SSE data", err);
+        }
+      };
+
+      es.onerror = (err) => {
+        console.error("SSE error", err);
+      };
+    };
+
+    startSSE();
+
+    function renderStats(data) {
+      document.getElementById("totalGroups").textContent = data.totalGroups;
+      document.getElementById("completedGroups").textContent = data.completed;
+      document.getElementById("inProgressGroups").textContent = data.inProgress;
+      document.getElementById("lastUpdate").textContent =
+        "Last Change: " + new Date().toLocaleTimeString();
+    }
+
     async function doLogout() {
       try {
         await fetch("/logout", { method: "POST" });
