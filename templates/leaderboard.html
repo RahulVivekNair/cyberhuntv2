@@ -68,23 +68,23 @@
       <div class="card-body ">
         <h3 id="leaderboard-title" class="card-title self-center">Rankings</h3>
         <div class="overflow-x-auto rounded-box border border-base-300 bg-base-200">
-        <table class="table w-full">
-          <thead>
-            <tr class="bg-primary/10">
-              <th scope="col">Rank</th>
-              <th scope="col">Group</th>
-              <th scope="col">Progress</th>
-              <th scope="col">Status</th>
-              <th scope="col">Total Time</th>
-            </tr>
-          </thead>
-          <tbody id="leaderboard">
-            <tr>
-              <td colspan="5" class="text-center">Loading...</td>
-            </tr>
-          </tbody>
-        </table>
-        
+          <table class="table w-full">
+            <thead>
+              <tr class="bg-primary/10">
+                <th scope="col">Rank</th>
+                <th scope="col">Group</th>
+                <th scope="col">Progress</th>
+                <th scope="col">Status</th>
+                <th scope="col">Total Time</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard">
+              <tr>
+                <td colspan="5" class="text-center">Loading...</td>
+              </tr>
+            </tbody>
+          </table>
+
         </div>
       </div>
     </div>
@@ -145,8 +145,11 @@
         ? '<span class="badge badge-success badge-sm">Completed</span>'
         : '';
 
+      // ✅ add conditional row background
+      const rowClass = group.completed ? "bg-success/20" : "";
+
       return `
-    <tr>
+    <tr class="${rowClass}">
       <td>${group.rank} ${group.badge || ""}</td>
       <td>${group.name}</td>
       <td>
@@ -164,6 +167,7 @@
     </tr>
   `;
     }
+
 
     function renderLeaderboard(data) {
       const tbody = document.getElementById("leaderboard");

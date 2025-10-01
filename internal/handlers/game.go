@@ -29,10 +29,10 @@ func (h *Handler) GamePage(c *gin.Context) {
 		if err != nil {
 			clueContent = "No clue found!"
 		} else {
-			clueContent = "Clue: " + clue.Content
+			clueContent = clue.Content
 		}
 	} else {
-		clueContent = "Congratulations! You finished! Check out the leaderboard to see your timing"
+		clueContent = "Congratulations! You finished! Check out the leaderboard to see your timing!"
 	}
 
 	c.HTML(http.StatusOK, "game.html", gin.H{
@@ -124,7 +124,7 @@ func (h *Handler) GamePartial(c *gin.Context) {
 			clueContent = clue.Content
 		}
 	} else {
-		clueContent = "Congratulations! You finished! Check out the leaderboard to see your timing"
+		clueContent = "Congratulations! You finished! Check out the leaderboard to see your timing!"
 	}
 
 	// Return JSON instead of HTML

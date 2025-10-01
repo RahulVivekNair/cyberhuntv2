@@ -1,68 +1,74 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
+
 <head>
   <meta charset="utf-8">
   <title>Cyberhunt Admin Login</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <!-- Tailwind + DaisyUI -->
-  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
-<body class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500">
-  <div class="card w-11/12 max-w-md shadow-2xl bg-base-100 rounded-2xl overflow-hidden mx-4">
-    <div class="card-body p-8">
-      <div class="text-center mb-6">
-        <h1 class="text-3xl font-bold text-primary mb-2">Cyberhunt Admin</h1>
-        <p class="text-base-content/70">Login to admin panel</p>
-      </div>
-      <form id="adminLoginForm" class="form-control gap-4">
-        <div class="form-control">
-          <label class="label">
-            <span class="label-text">Admin Name</span>
-          </label>
-          <input type="text" id="name" placeholder="Enter admin name" class="input input-bordered input-primary focus:input-primary-focus" required />
-        </div>
-        <div class="form-control">
-          <label class="label">
-            <span class="label-text">Password</span>
-          </label>
-          <input type="password" id="password" placeholder="Enter password" class="input input-bordered input-primary focus:input-primary-focus" required />
-        </div>
-        <button type="submit" class="btn btn-primary btn-lg w-full mt-4 hover:scale-105 transition-transform">Login</button>
-      </form>
-      <p id="error" class="text-red-500 text-center mt-4"></p>
-    </div>
-  </div>
+
+<body class="min-h-screen bg-base-200 font-sans flex items-center justify-center">
+
+  <form id="adminLoginForm" class="w-full max-w-sm">
+    <fieldset class="fieldset bg-base-100 border-base-300 rounded-box border p-6 shadow-xl">
+      <legend class="fieldset-legend text-xl font-bold text-primary">Admin Login</legend>
+
+      <!-- Feedback alert -->
+      <div id="feedback" class="hidden mb-4"></div>
+
+      <label for="name" class="label">Admin Name</label>
+      <input type="text" id="name" name="name" placeholder="Enter admin name"
+        class="input input-bordered input-primary w-full" required />
+
+      <label for="password" class="label mt-2">Password</label>
+      <input type="password" id="password" name="password" placeholder="Enter password"
+        class="input input-bordered input-primary w-full" required />
+
+      <button type="submit" class="btn btn-primary w-full mt-4">Login</button>
+    </fieldset>
+  </form>
 
   <script>
-    // Check if already logged in with admin cookie
+    const form = document.getElementById("adminLoginForm");
+    const feedback = document.getElementById("feedback");
+
+    // If already logged in, redirect straight to admin panel
     if (document.cookie.includes("adminAuth=")) {
-      window.location.href = "admin";
+      window.location.href = "/admin";
     }
 
-    document.getElementById("adminLoginForm").addEventListener("submit", async (e) => {
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const name = document.getElementById("name").value;
-      const password = document.getElementById("password").value;
-
-      const formData = new FormData();
-      formData.append("name", name);
-      formData.append("password", password);
+      const formData = new FormData(form);
 
       try {
-        const response = await fetch("/admin/login", {
+        const res = await fetch("/admin/login", {
           method: "POST",
           body: formData
         });
-        if (response.ok) {
+
+        if (res.ok) {
           window.location.href = "/admin";
         } else {
-          document.getElementById("error").textContent = "Invalid login!";
+          const data = await res.json().catch(() => ({}));
+          showFeedback(data.error || "Invalid login!", "error");
         }
-      } catch (err) {
-        document.getElementById("error").textContent = "Login failed!";
+      } catch {
+        showFeedback("Login failed! Please try again.", "error");
       }
     });
+
+    function showFeedback(message, type = "error") {
+      feedback.className = `alert alert-${type} mb-4`;
+      feedback.innerHTML = `<span>${message}</span>`;
+      feedback.classList.remove("hidden");
+    }
   </script>
+
 </body>
+
 </html>

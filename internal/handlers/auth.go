@@ -18,7 +18,7 @@ func (h *Handler) Login(c *gin.Context) {
 
 	group, err := h.groupService.GetGroupByNameAndPassword(c.Request.Context(), name, password)
 	if err != nil {
-		c.HTML(http.StatusUnauthorized, "login.html", gin.H{"error": "Invalid login!"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid login!"})
 		return
 	}
 
@@ -30,13 +30,15 @@ func (h *Handler) Login(c *gin.Context) {
 
 	tokenString, err := token.SignedString([]byte(h.jwtSecret))
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "login.html", gin.H{"error": "Failed to create session"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create session"})
 		return
 	}
 
 	// Set cookie
 	c.SetCookie("auth", tokenString, 3600*24, "/", "", false, true)
-	c.Redirect(http.StatusFound, "/game")
+
+	// Respond with success (JSON)
+	c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
 func (h *Handler) AdminLoginPage(c *gin.Context) {
@@ -49,7 +51,7 @@ func (h *Handler) AdminLogin(c *gin.Context) {
 
 	admin, err := h.adminService.GetAdminByNameAndPassword(c.Request.Context(), name, password)
 	if err != nil {
-		c.HTML(http.StatusUnauthorized, "adminLogin.html", gin.H{"error": "Invalid login!"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid login!"})
 		return
 	}
 
@@ -62,13 +64,15 @@ func (h *Handler) AdminLogin(c *gin.Context) {
 
 	tokenString, err := token.SignedString([]byte(h.jwtSecret))
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "adminLogin.html", gin.H{"error": "Failed to create session"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create session"})
 		return
 	}
 
 	// Set cookie
 	c.SetCookie("adminAuth", tokenString, 3600*24, "/", "", false, true)
-	c.Redirect(http.StatusFound, "/admin")
+
+	// Respond with success instead of redirect
+	c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
 func (h *Handler) Logout(c *gin.Context) {
