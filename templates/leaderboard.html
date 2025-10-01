@@ -47,15 +47,15 @@
       <div class="card-body">
         <h3 class="card-title self-center">Quick Stats</h3>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div class="stat bg-base-200 rounded-lg p-4">
+          <div class="stat bg-base-200 rounded-lg p-4 border border-base-300">
             <div class="stat-title">Total Groups</div>
             <div id="totalGroups" class="stat-value text-primary">-</div>
           </div>
-          <div class="stat bg-base-200 rounded-lg p-4">
+          <div class="stat bg-base-200 rounded-lg p-4 border border-base-300">
             <div class="stat-title">Completed</div>
             <div id="completedGroups" class="stat-value text-success">-</div>
           </div>
-          <div class="stat bg-base-200 rounded-lg p-4">
+          <div class="stat bg-base-200 rounded-lg p-4 border border-base-300">
             <div class="stat-title">In Progress</div>
             <div id="inProgressGroups" class="stat-value text-warning">-</div>
           </div>
@@ -65,8 +65,9 @@
 
     <!-- Leaderboard Table -->
     <div class="card bg-base-100 shadow-xl rounded-2xl">
-      <div class="card-body">
+      <div class="card-body ">
         <h3 id="leaderboard-title" class="card-title self-center">Rankings</h3>
+        <div class="overflow-x-auto rounded-box border border-base-300 bg-base-200">
         <table class="table w-full">
           <thead>
             <tr class="bg-primary/10">
@@ -83,6 +84,8 @@
             </tr>
           </tbody>
         </table>
+        
+        </div>
       </div>
     </div>
   </main>
@@ -114,6 +117,7 @@
         try {
           const data = JSON.parse(e.data);
           renderStats(data);
+          renderLeaderboard(data);
           console.log("Leaderboard update:", data);
         } catch (err) {
           console.error("Invalid SSE data", err);
@@ -133,6 +137,45 @@
       document.getElementById("inProgressGroups").textContent = data.inProgress;
       document.getElementById("lastUpdate").textContent =
         "Last Change: " + new Date().toLocaleTimeString();
+    }
+
+    function renderRow(group, totalClues) {
+      const progress = `${group.current_clue_idx}/${totalClues}`;
+      const status = group.completed
+        ? '<span class="badge badge-success badge-sm">Completed</span>'
+        : '';
+
+      return `
+    <tr>
+      <td>${group.rank} ${group.badge || ""}</td>
+      <td>${group.name}</td>
+      <td>
+        <div class="flex items-center gap-2">
+          <span>${progress}</span>
+          <progress 
+            class="progress ${group.completed ? "progress-success" : "progress-primary"} w-16"
+            value="${group.current_clue_idx}" 
+            max="${totalClues}">
+          </progress>
+        </div>
+      </td>
+      <td>${status}</td>
+      <td>${group.total_time || "-"}</td>
+    </tr>
+  `;
+    }
+
+    function renderLeaderboard(data) {
+      const tbody = document.getElementById("leaderboard");
+
+      if (!data.groups || data.groups.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center">No data</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = data.groups
+        .map(g => renderRow(g, data.totalClues))
+        .join("");
     }
 
     async function doLogout() {
