@@ -1,19 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
+
 <head>
   <meta charset="utf-8">
   <title>Cyberhunt Admin</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <!-- Tailwind + DaisyUI -->
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
+
 <body class="min-h-screen bg-base-200 font-sans">
 
   <!-- Navbar -->
-  <nav class="w-full bg-base-100 shadow-lg py-2 px-4 sm:py-4 sm:px-6 flex justify-between items-center sticky top-0 z-10 rounded-b-2xl">
-    <h1 class="text-xl sm:text-2xl font-bold text-primary">Cyberhunt Admin</h1>
-    <div class="flex gap-2 sm:gap-4 flex-wrap items-center">
-      <button id="logout" class="btn btn-error btn-sm transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-lg">Logout</button>
+  <nav class="navbar bg-base-100 shadow-lg sticky top-0 z-40 px-4 sm:px-6 py-2 sm:py-3">
+    <div class="flex-1">
+      <h1 class="text-xl sm:text-2xl font-bold text-primary">Cyberhunt Admin</h1>
+    </div>
+    <div class="flex-none gap-2 sm:gap-4 flex-wrap">
+      <a href="/seed" class="btn btn-outline btn-primary btn-sm">Seed</a>
+
+      <button id="logout" class="btn btn-error btn-sm" onclick="logoutModal?.showModal()">Logout</button>
     </div>
   </nav>
 
@@ -58,7 +66,8 @@
               </div>
               <div class="form-control">
                 <label class="label"><span class="label-text font-semibold">Password</span></label>
-                <input type="password" id="groupPassword" class="input input-bordered" required placeholder="Enter password">
+                <input type="password" id="groupPassword" class="input input-bordered" required
+                  placeholder="Enter password">
                 <button type="button" id="generatePassword" class="btn btn-ghost btn-sm mt-2">Generate Password</button>
               </div>
               <div class="form-control mt-6">
@@ -76,21 +85,33 @@
             <div class="stats stats-vertical shadow bg-base-100">
               <div class="stat">
                 <div class="stat-figure text-primary">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"></path></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                    class="inline-block w-8 h-8 stroke-current">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4">
+                    </path>
+                  </svg>
                 </div>
                 <div class="stat-title">Total Groups</div>
                 <div id="totalGroups" class="stat-value">-</div>
               </div>
               <div class="stat">
                 <div class="stat-figure text-success">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                    class="inline-block w-8 h-8 stroke-current">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
                 </div>
                 <div class="stat-title">Completed</div>
                 <div id="completedGroups" class="stat-value text-success">-</div>
               </div>
               <div class="stat">
                 <div class="stat-figure text-warning">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                    class="inline-block w-8 h-8 stroke-current">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
                 </div>
                 <div class="stat-title">In Progress</div>
                 <div id="inProgressGroups" class="stat-value text-warning">-</div>
@@ -122,7 +143,9 @@
                 </tr>
               </thead>
               <tbody id="leaderboard">
-                <tr><td colspan="7" class="text-center">Loading...</td></tr>
+                <tr>
+                  <td colspan="7" class="text-center">Loading...</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -157,7 +180,8 @@
   <dialog id="clearStateModal" class="modal">
     <div class="modal-box">
       <h3 class="font-bold text-lg">Clear Game State</h3>
-      <p class="py-4">Are you sure you want to clear all game state? This will reset all progress and cannot be undone.</p>
+      <p class="py-4">Are you sure you want to clear all game state? This will reset all progress and cannot be undone.
+      </p>
       <div class="modal-action">
         <button class="btn" onclick="clearStateModal.close()">Cancel</button>
         <button id="confirmClearState" class="btn btn-warning">Clear State</button>
@@ -177,108 +201,109 @@
   </dialog>
 
   <script>
-    (function(){
+    (function () {
       const $ = id => document.getElementById(id);
-      const EL = ['startGameBtn','endGameBtn','clearStateBtn','gameStatus','statusMessages','addGroupForm','groupName','groupPathway','groupPassword','addLoading','leaderboard','totalGroups','completedGroups','inProgressGroups','lastUpdate'].reduce((acc,id)=>{acc[id]=$(id);return acc},{})
+      const EL = ['startGameBtn', 'endGameBtn', 'clearStateBtn', 'gameStatus', 'statusMessages', 'addGroupForm', 'groupName', 'groupPathway', 'groupPassword', 'addLoading', 'leaderboard', 'totalGroups', 'completedGroups', 'inProgressGroups', 'lastUpdate'].reduce((acc, id) => { acc[id] = $(id); return acc }, {})
 
-      const api = async (url, opts={})=>{
-        try{const r=await fetch(url,opts);const j=await r.json();if(!r.ok)throw new Error(j.error||'Request failed');return j}catch(e){showStatus(`Failed: ${e.message}`,'error');throw e}
+      const api = async (url, opts = {}) => {
+        try { const r = await fetch(url, opts); const j = await r.json(); if (!r.ok) throw new Error(j.error || 'Request failed'); return j } catch (e) { showStatus(`Failed: ${e.message}`, 'error'); throw e }
       }
 
-      const showStatus=(msg,type='info')=>{
-        const a=document.createElement('div');a.className=`alert alert-${type} mb-2`;a.innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-info shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span>${msg}</span><button class="btn btn-sm btn-circle btn-ghost ml-auto" onclick="this.parentElement.remove()">✕</button>`;
-        EL.statusMessages.appendChild(a);setTimeout(()=>a.remove(),10000);
+      const showStatus = (msg, type = 'info') => {
+        const a = document.createElement('div'); a.className = `alert alert-${type} mb-2`; a.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-info shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span>${msg}</span><button class="btn btn-sm btn-circle btn-ghost ml-auto" onclick="this.parentElement.remove()">✕</button>`;
+        EL.statusMessages.appendChild(a); setTimeout(() => a.remove(), 10000);
       }
 
-      const fmtElapsed = s => {const pad=n=>n.toString().padStart(2,'0');return [Math.floor(s/3600),Math.floor((s%3600)/60),s%60].map(pad).join(':')}
-      const formatTime = v=>{
-        if(!v||v==='-')return '-';
-        if(typeof v==='string'&&v.includes(':')){const [m,s]=v.split(':').map(n=>parseInt(n,10));if(isNaN(m)||isNaN(s))return '-';const h=Math.floor(m/60);return [h,m%60,s].map(n=>n.toString().padStart(2,'0')).join(':')}
-        if(typeof v==='number')return fmtElapsed(v);
+      const fmtElapsed = s => { const pad = n => n.toString().padStart(2, '0'); return [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60].map(pad).join(':') }
+      const formatTime = v => {
+        if (!v || v === '-') return '-';
+        if (typeof v === 'string' && v.includes(':')) { const [m, s] = v.split(':').map(n => parseInt(n, 10)); if (isNaN(m) || isNaN(s)) return '-'; const h = Math.floor(m / 60); return [h, m % 60, s].map(n => n.toString().padStart(2, '0')).join(':') }
+        if (typeof v === 'number') return fmtElapsed(v);
         return '-';
       }
 
-      let state = {started:false,ended:false,startTime:null,elapsedInterval:null};
-      let groupToDelete = null, es=null, retries=0, MAX_RETRIES=3;
+      let state = { started: false, ended: false, startTime: null, elapsedInterval: null };
+      let groupToDelete = null, es = null, retries = 0, MAX_RETRIES = 3;
 
-      const setButtons=(startDisabled,endDisabled,startText,endText)=>{EL.startGameBtn.disabled=startDisabled;EL.startGameBtn.textContent=startText;EL.endGameBtn.disabled=endDisabled;EL.endGameBtn.textContent=endText}
-      const updateGameStatus=()=>{
-        const {started,ended,startTime}=state;let status='<strong>Game Not Started</strong>';
-        if(ended)status='<strong>Game Ended</strong>';else if(started&&startTime){const elapsed=Math.floor((new Date()-startTime)/1000);status=`<strong>Game Running</strong> - Elapsed Time: ${fmtElapsed(elapsed)}`}
-        EL.gameStatus.innerHTML=status;
+      const setButtons = (startDisabled, endDisabled, startText, endText) => { EL.startGameBtn.disabled = startDisabled; EL.startGameBtn.textContent = startText; EL.endGameBtn.disabled = endDisabled; EL.endGameBtn.textContent = endText }
+      const updateGameStatus = () => {
+        const { started, ended, startTime } = state; let status = '<strong>Game Not Started</strong>';
+        if (ended) status = '<strong>Game Ended</strong>'; else if (started && startTime) { const elapsed = Math.floor((new Date() - startTime) / 1000); status = `<strong>Game Running</strong> - Elapsed Time: ${fmtElapsed(elapsed)}` }
+        EL.gameStatus.innerHTML = status;
       }
 
-      const loadGameStatus = async ()=>{
-        try{
-          const d=await api('/api/admin/status');state.ended=d.game_ended;
-          if(d.game_ended){state.started=false;setButtons(false,false,'Start Game','Game Ended')}
-          else if(d.game_started){state.started=true;state.startTime=new Date(d.start_time);state.elapsedInterval=setInterval(updateGameStatus,1000);setButtons(true,false,'Game Started','End Game')}
-          else{state.started=false;setButtons(false,true,'Start Game','End Game')}
+      const loadGameStatus = async () => {
+        try {
+          const d = await api('/api/admin/status'); state.ended = d.game_ended;
+          if (d.game_ended) { state.started = false; setButtons(false, false, 'Start Game', 'Game Ended') }
+          else if (d.game_started) { state.started = true; state.startTime = new Date(d.start_time); state.elapsedInterval = setInterval(updateGameStatus, 1000); setButtons(true, false, 'Game Started', 'End Game') }
+          else { state.started = false; setButtons(false, true, 'Start Game', 'End Game') }
           updateGameStatus();
-        }catch(e){console.error('Failed to load game status',e)}
+        } catch (e) { console.error('Failed to load game status', e) }
       }
 
-      const startGame = async ()=>{
-        EL.startGameBtn.disabled=true;const cd=document.createElement('div');EL.statusMessages.appendChild(cd);
-        for(let i=5;i>0;i--){cd.textContent=`Starting game in ${i} seconds...`;await new Promise(r=>setTimeout(r,1000))}
+      const startGame = async () => {
+        EL.startGameBtn.disabled = true; const cd = document.createElement('div'); EL.statusMessages.appendChild(cd);
+        for (let i = 5; i > 0; i--) { cd.textContent = `Starting game in ${i} seconds...`; await new Promise(r => setTimeout(r, 1000)) }
         cd.remove();
-        try{await api('/api/admin/start',{method:'POST'});showStatus('Game started successfully!','success');state.started=true;state.startTime=new Date();state.elapsedInterval=setInterval(updateGameStatus,1000);setButtons(true,false,'Game Started','End Game');updateGameStatus()}catch(e){EL.startGameBtn.disabled=false}
+        try { await api('/api/admin/start', { method: 'POST' }); showStatus('Game started successfully!', 'success'); state.started = true; state.startTime = new Date(); state.elapsedInterval = setInterval(updateGameStatus, 1000); setButtons(true, false, 'Game Started', 'End Game'); updateGameStatus() } catch (e) { EL.startGameBtn.disabled = false }
       }
 
-      const endGame = async ()=>{endGameModal.close();try{await api('/api/admin/end',{method:'POST'});showStatus('Game ended successfully!','success');state.started=false;state.ended=true;clearInterval(state.elapsedInterval);state.elapsedInterval=null;state.startTime=null;setButtons(false,true,'Start Game','Game Ended');updateGameStatus()}catch(e){console.error(e)} }
+      const endGame = async () => { endGameModal.close(); try { await api('/api/admin/end', { method: 'POST' }); showStatus('Game ended successfully!', 'success'); state.started = false; state.ended = true; clearInterval(state.elapsedInterval); state.elapsedInterval = null; state.startTime = null; setButtons(false, true, 'Start Game', 'Game Ended'); updateGameStatus() } catch (e) { console.error(e) } }
 
-      const clearState = async ()=>{clearStateModal.close();try{await api('/api/admin/clear',{method:'POST'});state={started:false,ended:false,startTime:null,elapsedInterval:null};clearInterval(state.elapsedInterval);setButtons(false,true,'Start Game','End Game');updateGameStatus();showStatus('Game state cleared successfully!','success');updateStats([])}catch(e){console.error(e)} }
+      const clearState = async () => { clearStateModal.close(); try { await api('/api/admin/clear', { method: 'POST' }); state = { started: false, ended: false, startTime: null, elapsedInterval: null }; clearInterval(state.elapsedInterval); setButtons(false, true, 'Start Game', 'End Game'); updateGameStatus(); showStatus('Game state cleared successfully!', 'success'); updateStats([]) } catch (e) { console.error(e) } }
 
-      const generatePassword = ()=>{const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';EL.groupPassword.value=Array.from({length:6},()=>chars[Math.floor(Math.random()*chars.length)]).join('')}
+      const generatePassword = () => { const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'; EL.groupPassword.value = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('') }
 
-      const addGroup = async e=>{e.preventDefault();const name=EL.groupName.value.trim(),path=EL.groupPathway.value,password=EL.groupPassword.value.trim();if(!name||!path||!password){showStatus('Please fill in all fields.','warning');return}const btn=e.target.querySelector('button[type="submit"]');btn.disabled=true;EL.addLoading.classList.remove('hidden');try{const d=await api('/api/admin/group',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,pathway:path,password})});showStatus(`Group "${name}" added successfully! Password: ${d.password}`,'success');EL.groupName.value=EL.groupPathway.value=EL.groupPassword.value=''}catch(e){console.error(e)}finally{btn.disabled=false;EL.addLoading.classList.add('hidden')}}
+      const addGroup = async e => { e.preventDefault(); const name = EL.groupName.value.trim(), path = EL.groupPathway.value, password = EL.groupPassword.value.trim(); if (!name || !path || !password) { showStatus('Please fill in all fields.', 'warning'); return } const btn = e.target.querySelector('button[type="submit"]'); btn.disabled = true; EL.addLoading.classList.remove('hidden'); try { const d = await api('/api/admin/group', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, pathway: path, password }) }); showStatus(`Group "${name}" added successfully! Password: ${d.password}`, 'success'); EL.groupName.value = EL.groupPathway.value = EL.groupPassword.value = '' } catch (e) { console.error(e) } finally { btn.disabled = false; EL.addLoading.classList.add('hidden') } }
 
-      const deleteGroupReq = async ()=>{if(!groupToDelete)return;try{await api(`/api/admin/group/${groupToDelete.id}`,{method:'DELETE'});showStatus(`Group "${groupToDelete.name}" deleted successfully!`,'success');deleteModal.close()}catch(e){console.error(e)}groupToDelete=null}
+      const deleteGroupReq = async () => { if (!groupToDelete) return; try { await api(`/api/admin/group/${groupToDelete.id}`, { method: 'DELETE' }); showStatus(`Group "${groupToDelete.name}" deleted successfully!`, 'success'); deleteModal.close() } catch (e) { console.error(e) } groupToDelete = null }
 
-      const logout = async ()=>{logoutModal.close();document.body.style.opacity='0';document.body.style.transition='opacity 0.3s ease-in-out';setTimeout(async ()=>{await fetch('/logout',{method:'POST'});window.location.href='/admin/login'},300)}
+      const logout = async () => { logoutModal.close(); document.body.style.opacity = '0'; document.body.style.transition = 'opacity 0.3s ease-in-out'; setTimeout(async () => { await fetch('/logout', { method: 'POST' }); window.location.href = '/admin/login' }, 300) }
 
-      window.deleteGroup = (id,name)=>{groupToDelete={id,name};deleteModal.showModal()}
+      window.deleteGroup = (id, name) => { groupToDelete = { id, name }; deleteModal.showModal() }
 
-      const sseConnect = ()=>{
-        if(es)es.close();es=new EventSource('/api/admin/leaderboard/stream');
-        es.onmessage=e=>{try{updateLeaderboard(JSON.parse(e.data));retries=0}catch(err){console.error('SSE parse',err)}};
-        es.onerror=()=>{if(retries<MAX_RETRIES){retries++;setTimeout(sseConnect,1000*retries)}};
-        es.onopen=()=>retries=0;
+      const sseConnect = () => {
+        if (es) es.close(); es = new EventSource('/api/admin/leaderboard/stream');
+        es.onmessage = e => { try { updateLeaderboard(JSON.parse(e.data)); retries = 0 } catch (err) { console.error('SSE parse', err) } };
+        es.onerror = () => { if (retries < MAX_RETRIES) { retries++; setTimeout(sseConnect, 1000 * retries) } };
+        es.onopen = () => retries = 0;
       }
 
-      const updateLeaderboard = data=>{
-        const rows=(data.groups||[]).map((g,i)=>{
+      const updateLeaderboard = data => {
+        const rows = (data.groups || []).map((g, i) => {
           const progress = Math.round((g.current_clue_idx / data.totalClues) * 100);
           const rowClass = g.completed ? 'bg-success/10' : i % 2 ? 'bg-base-200/50' : '';
           return `
             <tr class="${rowClass}">
-              <td class="whitespace-nowrap text-sm md:text-base font-bold">${g.rank} ${g.badge||''}</td>
+              <td class="whitespace-nowrap text-sm md:text-base font-bold">${g.rank} ${g.badge || ''}</td>
               <td class="text-sm md:text-base font-medium">${g.name}</td>
-              <td class="text-sm md:text-base"><span class="badge badge-outline">${(g.pathway||'').toUpperCase()}</span></td>
+              <td class="text-sm md:text-base"><span class="badge badge-outline">${(g.pathway || '').toUpperCase()}</span></td>
               <td class="text-sm md:text-base">
                 <div class="flex items-center gap-2">
                   <span>${g.current_clue_idx}/${data.totalClues}</span>
                   <div class="w-12 bg-base-300 rounded-full h-2"><div class="bg-primary h-2 rounded-full" style="width: ${progress}%"></div></div>
                 </div>
               </td>
-              <td class="text-sm md:text-base"><span class="badge ${g.completed? 'badge-success">Done' : 'badge-warning">Playing'}</span></td>
+              <td class="text-sm md:text-base"><span class="badge ${g.completed ? 'badge-success">Done' : 'badge-warning">Playing'}</span></td>
               <td class="text-sm md:text-base font-mono">${formatTime(g.total_time)}</td>
-              <td class="text-sm md:text-base"><button class="btn btn-error btn-xs" onclick="deleteGroup(${g.id}, '${g.name.replace(/'/g,"\\'")}')">Delete</button></td>
+              <td class="text-sm md:text-base"><button class="btn btn-error btn-xs" onclick="deleteGroup(${g.id}, '${g.name.replace(/'/g, "\\'")}')">Delete</button></td>
             </tr>`
-        }).join('')||'<tr><td colspan="7" class="text-center">No groups</td></tr>';
-        EL.leaderboard.innerHTML=rows;
-        updateStats(data.groups||[]);
+        }).join('') || '<tr><td colspan="7" class="text-center">No groups</td></tr>';
+        EL.leaderboard.innerHTML = rows;
+        updateStats(data.groups || []);
         EL.lastUpdate.textContent = `Last Change: ${new Date().toLocaleTimeString()}`;
       }
 
-      const updateStats = groups=>{const g=groups||[];const completed=g.filter(x=>x.completed).length;EL.totalGroups.textContent=g.length;EL.completedGroups.textContent=completed;EL.inProgressGroups.textContent=g.length-completed}
+      const updateStats = groups => { const g = groups || []; const completed = g.filter(x => x.completed).length; EL.totalGroups.textContent = g.length; EL.completedGroups.textContent = completed; EL.inProgressGroups.textContent = g.length - completed }
 
       // wire events
-      EL.startGameBtn.onclick=startGame;EL.endGameBtn.onclick=()=>endGameModal.showModal();EL.clearStateBtn.onclick=()=>clearStateModal.showModal();document.getElementById('confirmEndGame').onclick=endGame;document.getElementById('confirmClearState').onclick=clearState;document.getElementById('confirmDelete').onclick=deleteGroupReq;document.getElementById('confirmLogout').onclick=logout;EL.addGroupForm.onsubmit=addGroup;document.getElementById('generatePassword').onclick=generatePassword;document.getElementById('logout').onclick=()=>logoutModal.showModal();
+      EL.startGameBtn.onclick = startGame; EL.endGameBtn.onclick = () => endGameModal.showModal(); EL.clearStateBtn.onclick = () => clearStateModal.showModal(); document.getElementById('confirmEndGame').onclick = endGame; document.getElementById('confirmClearState').onclick = clearState; document.getElementById('confirmDelete').onclick = deleteGroupReq; document.getElementById('confirmLogout').onclick = logout; EL.addGroupForm.onsubmit = addGroup; document.getElementById('generatePassword').onclick = generatePassword; document.getElementById('logout').onclick = () => logoutModal.showModal();
 
       // init
-      loadGameStatus();sseConnect();
+      loadGameStatus(); sseConnect();
     })();
   </script>
 </body>
+
 </html>

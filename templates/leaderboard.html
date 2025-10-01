@@ -1,178 +1,125 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
+
 <head>
-  <meta charset="utf-8">
-  <title>Cyberhunt Leaderboard</title>
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyberhunt - Leaderboard</title>
+
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-  <!-- Tailwind + DaisyUI -->
+  <!-- Favicons -->
+  <link rel="icon" href="/static/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+  <link rel="manifest" href="/static/site.webmanifest">
+
   <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
 </head>
+
 <body class="min-h-screen bg-base-200 font-sans text-base">
 
   <!-- Navbar -->
-<nav class="navbar bg-base-100 shadow-lg sticky top-0 z-40 px-4 sm:px-6 py-2 sm:py-3">
-  <div class="flex-1">
-    <h1 class="text-xl sm:text-2xl font-bold text-primary">Cyberhunt</h1>
-  </div>
-  <div class="flex-none gap-2 sm:gap-4 flex-wrap">
-    <!-- Page-specific links -->
-    <!-- On Game page -->
-    <!-- <a href="/leaderboard" class="btn btn-outline btn-primary btn-sm">Leaderboard</a> -->
+  <nav class="navbar bg-base-100 shadow-lg sticky top-0 z-40 px-4 sm:px-6 py-2 sm:py-3">
+    <div class="flex-1">
+      <h1 class="text-xl sm:text-2xl font-bold text-primary">Cyberhunt</h1>
+    </div>
+    <div class="flex-none gap-2 sm:gap-4 flex-wrap"> <a href="/game" class="btn btn-outline btn-primary btn-sm">Game</a>
+      <button id="logout" class="btn btn-error btn-sm" onclick="logoutModal?.showModal()">Logout</button>
+    </div>
+  </nav>
 
-    <!-- On Leaderboard page -->
-    <a href="/game" class="btn btn-outline btn-primary btn-sm">Game</a>
-
-    <button id="logout" class="btn btn-error btn-sm" onclick="logoutModal?.showModal()">Logout</button>
-  </div>
-</nav>
-
-  <div class="container mx-auto p-6">
-    <div class="card w-full max-w-6xl mx-auto bg-base-100 shadow-xl rounded-2xl">
-      <div class="card-body p-6">
-        
-        <!-- Header -->
-        <div class="flex flex-col sm:flex-row justify-between items-center mb-6">
-          <h1 class="text-3xl font-bold text-primary">Leaderboard</h1>
-          <div class="flex gap-2 mt-2 sm:mt-0 items-center">
-            <span class="btn btn-success btn-sm font-semibold">Live</span>
-            <span class="btn btn-ghost btn-sm text-xs sm:text-sm" id="lastUpdate">Last Change: Never</span>
-          </div>
+  <main class="container mx-auto p-4 max-w-4xl space-y-4">
+    <div class="card bg-base-100 shadow-xl rounded-2xl">
+      <div class="card-body items-center">
+        <h2 class="card-title">Leaderboard</h2>
+        <div class="flex items-center gap-3">
+          <span class="btn btn-success btn-xs">Live</span>
+          <time id="lastUpdate">Last Change: Never</time>
         </div>
+      </div>
+    </div>
 
-        <!-- Quick Stats -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <!-- Stats Section -->
+    <div class="card bg-base-100 shadow-xl rounded-2xl">
+      <div class="card-body">
+        <h3 class="card-title self-center">Quick Stats</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div class="stat bg-base-200 rounded-lg p-4">
-            <div class="stat-figure text-primary">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"/>
-              </svg>
-            </div>
             <div class="stat-title">Total Groups</div>
             <div id="totalGroups" class="stat-value text-primary">-</div>
           </div>
           <div class="stat bg-base-200 rounded-lg p-4">
-            <div class="stat-figure text-success">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-              </svg>
-            </div>
             <div class="stat-title">Completed</div>
             <div id="completedGroups" class="stat-value text-success">-</div>
           </div>
           <div class="stat bg-base-200 rounded-lg p-4">
-            <div class="stat-figure text-warning">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-              </svg>
-            </div>
             <div class="stat-title">In Progress</div>
             <div id="inProgressGroups" class="stat-value text-warning">-</div>
           </div>
         </div>
-
-        <!-- Leaderboard Table -->
-        <div class="overflow-x-auto">
-          <table class="table w-full">
-            <thead>
-              <tr class="bg-primary/10">
-                <th>Rank</th>
-                <th>Group</th>
-                <th>Progress</th>
-                <th>Status</th>
-                <th>Total Time</th>
-              </tr>
-            </thead>
-            <tbody id="leaderboard">
-              <tr><td colspan="5" class="text-center">Loading...</td></tr>
-            </tbody>
-          </table>
-        </div>
-
       </div>
     </div>
-  </div>
 
+    <!-- Leaderboard Table -->
+    <div class="card bg-base-100 shadow-xl rounded-2xl">
+      <div class="card-body">
+        <h3 id="leaderboard-title" class="card-title self-center">Rankings</h3>
+        <table class="table w-full">
+          <thead>
+            <tr class="bg-primary/10">
+              <th scope="col">Rank</th>
+              <th scope="col">Group</th>
+              <th scope="col">Progress</th>
+              <th scope="col">Status</th>
+              <th scope="col">Total Time</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard">
+            <tr>
+              <td colspan="5" class="text-center">Loading...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+  <dialog id="logoutModal" class="modal">
+    <div class="modal-box">
+      <h3 class="text-lg font-bold">Confirm Logout</h3>
+      <p class="py-2">Are you sure you want to log out?</p>
+      <div class="modal-action">
+        <!-- Cancel closes the modal -->
+        <form method="dialog">
+          <button class="btn">Cancel</button>
+        </form>
+        <!-- Logout triggers logout -->
+        <button id="confirmLogout" class="btn btn-error">Logout</button>
+      </div>
+    </div>
+
+    <!-- Clicking outside closes the modal -->
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
   <script>
-  document.addEventListener("DOMContentLoaded", () => {
-    const $ = id => document.getElementById(id);
-
-    const formatTime = (t) => {
-      if (!t || t === "-" || t === null) return "-";
-      if (typeof t === "string" && t.includes(":")) {
-        let [m, s] = t.split(":").map(Number);
-        if (isNaN(m) || isNaN(s)) return "-";
-        const h = Math.floor(m / 60);
-        m %= 60;
-        return [h, m, s].map(v => v.toString().padStart(2, "0")).join(":");
+    async function doLogout() {
+      try {
+        await fetch("/logout", { method: "POST" });
+      } catch (e) {
+        console.error("Logout request failed:", e);
       }
-      if (typeof t === "number") {
-        const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = t % 60;
-        return [h, m, s].map(v => v.toString().padStart(2, "0")).join(":");
-      }
-      return "-";
-    };
-
-    const renderRow = (g, totalClues) => {
-      const progress = `${g.current_clue_idx || 0}/${totalClues}`;
-      const percent = Math.round(((g.current_clue_idx || 0) / totalClues) * 100);
-      const rowClass = g.completed ? "bg-success/10" : ((g.rank || 0) % 2 ? "bg-base-200/50" : "");
-      const status = g.completed ? '<span class="badge badge-success">Completed</span>' : "";
-
-      return `
-        <tr class="${rowClass}">
-          <td class="font-bold">${g.rank} ${g.badge || ""}</td>
-          <td class="font-medium">${g.name}</td>
-          <td>
-            <div class="flex items-center gap-2">
-              <span>${progress}</span>
-              <div class="w-12 bg-base-300 rounded-full h-2">
-                <div class="bg-primary h-2 rounded-full" style="width:${percent}%"></div>
-              </div>
-            </div>
-          </td>
-          <td>${status}</td>
-          <td class="font-mono">${formatTime(g.total_time)}</td>
-        </tr>`;
-    };
-
-    const renderLeaderboard = (data) => {
-      const tbody = $("leaderboard");
-      if (!tbody) return;
-
-      if (!data || !data.groups?.length) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center">No data</td></tr>';
-        return;
-      }
-
-      const { groups, totalClues = 1 } = data;
-      tbody.innerHTML = groups.map(g => renderRow(g, totalClues)).join("");
-
-      const completed = groups.filter(g => g.completed).length;
-      $("totalGroups").textContent = groups.length;
-      $("completedGroups").textContent = completed;
-      $("inProgressGroups").textContent = groups.length - completed;
-      $("lastUpdate").textContent = `Last Change: ${new Date().toLocaleTimeString()}`;
-    };
-
-    const startSSE = () => {
-      const es = new EventSource("/api/leaderboard/stream");
-      es.onmessage = e => {
-        try { renderLeaderboard(JSON.parse(e.data)); }
-        catch (err) { console.error("Invalid SSE data", err); }
-      };
-      es.onerror = err => console.error("SSE error", err);
-    };
-
-    startSSE();
-
-    $("logout")?.addEventListener("click", async () => {
-      await fetch("/logout", { method: "POST" });
       location.href = "/login";
+    }
+
+    document.getElementById("confirmLogout")?.addEventListener("click", async () => {
+      document.getElementById("logoutModal").close();
+      await doLogout();
     });
-  });
   </script>
 </body>
+
 </html>
-   
