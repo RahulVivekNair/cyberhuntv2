@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -120,16 +121,18 @@ func (h *Handler) GamePartial(c *gin.Context) {
 		if err != nil {
 			clueContent = "No clue found!"
 		} else {
-			clueContent = "Clue: " + clue.Content
+			clueContent = clue.Content
 		}
 	} else {
 		clueContent = "Congratulations! You finished! Check out the leaderboard to see your timing"
 	}
 
-	// Render just the partial template for HTMX
-	c.HTML(http.StatusOK, "gamePartial.html", gin.H{
-		"Group":      group,
-		"TotalClues": totalClues,
-		"Clue":       clueContent,
+	// Return JSON instead of HTML
+	c.JSON(http.StatusOK, gin.H{
+		"progress":    fmt.Sprintf("%d/%d", group.CurrentClueIdx, totalClues),
+		"completed":   group.Completed,
+		"clue":        clueContent,
+		"totalClues":  totalClues,
+		"currentClue": group.CurrentClueIdx,
 	})
 }

@@ -96,14 +96,14 @@
         const qrScanner = new QrScanner(
             videoElem,
             result => {
-        if (!scanningEnabled) return;   // ignore scans if locked
-        scanningEnabled = false;        // lock immediately
+                if (!scanningEnabled) return;   // ignore scans if locked
+                scanningEnabled = false;        // lock immediately
 
-        validateQRCode(result.data).finally(() => {
-            // unlock after a short cooldown so alerts don’t pile
-            setTimeout(() => { scanningEnabled = true; }, 2100);
-        });
-    },
+                validateQRCode(result.data).finally(() => {
+                    // unlock after a short cooldown so alerts don’t pile
+                    setTimeout(() => { scanningEnabled = true; }, 2100);
+                });
+            },
             {
                 preferredCamera: 'environment',
                 maxScansPerSecond: 5,
@@ -165,7 +165,7 @@
 
                 if (data.success) {
                     console.log("✅ Correct! Moving to next clue...", data.message);
-                    showAlert(data.message|| "Correct code!", "success");
+                    showAlert(data.message || "Correct code!", "success");
                     // Refresh the clue progress + clue text
                     await refreshGroupPartial();
                 } else {
@@ -181,19 +181,16 @@
         async function refreshGroupPartial() {
             try {
                 const res = await fetch("/api/game-partial");
-                const html = await res.text();
+                const data = await res.json();
 
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, "text/html");
-
-                document.getElementById("clueProgress").innerHTML =
-                    doc.querySelector("#clueProgress").innerHTML;
-                document.getElementById("clue").innerHTML =
-                    doc.querySelector("#clue").innerHTML;
+                document.getElementById("clueProgress").textContent =
+                    data.completed ? "COMPLETE" : `Clue: ${data.progress}`;
+                document.getElementById("clue").textContent = data.clue;
             } catch (err) {
                 console.error("Failed to refresh clue:", err);
             }
         }
+
 
         async function cleanupScanner() {
             try {
