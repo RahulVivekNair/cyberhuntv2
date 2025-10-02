@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyberhunt - QR Codes</title>
+
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <!-- Favicons -->
+  <link rel="icon" href="/static/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+  <link rel="manifest" href="/static/site.webmanifest">
+
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <!-- QR Code Generation Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- PDF Export Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+
+<body class="min-h-screen bg-base-200 font-sans text-base">
+
+  <!-- Navbar -->
+  <nav class="navbar bg-base-100 shadow-lg sticky top-0 z-40 px-4 sm:px-6 py-2 sm:py-3">
+    <div class="flex-1">
+      <h1 class="text-xl sm:text-2xl font-bold text-primary">QR Codes</h1>
+    </div>
+    <div class="flex-none gap-2 sm:gap-4 flex-wrap">
+      <a href="/admin" class="btn btn-outline btn-primary btn-sm">Admin</a>
+      <a href="/seed" class="btn btn-outline btn-secondary btn-sm">Seed</a>
+      <button id="logout" class="btn btn-error btn-sm" onclick="logoutModal?.showModal()">Logout</button>
+    </div>
+  </nav>
+
+  <main class="container mx-auto p-4 max-w-7xl space-y-4">
+
+    <!-- Filter and Actions -->
+    <div class="card bg-base-100 shadow-xl rounded-2xl">
+      <div class="card-body">
+        <div class="flex flex-wrap gap-4 items-end justify-between">
+          <!-- Pathway Filter -->
+          <div class="form-control flex-1 min-w-[200px]">
+            <label class="label font-semibold">Filter by Pathway</label>
+            <select id="pathwayFilter" class="select select-bordered w-full">
+              <option value="">All Pathways</option>
+              <option value="red">🔴 Red</option>
+              <option value="blue">🔵 Blue</option>
+              <option value="yellow">🟡 Yellow</option>
+              <option value="green">🟢 Green</option>
+            </select>
+          </div>
+
+          <!-- Export Button -->
+          <div class="form-control">
+            <button id="exportPdfBtn" class="btn btn-accent">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Export to PDF
+            </button>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats stats-horizontal shadow mt-4">
+          <div class="stat bg-base-200 rounded-lg">
+            <div class="stat-title">Total QR Codes</div>
+            <div id="totalCount" class="stat-value text-primary">0</div>
+          </div>
+          <div class="stat bg-base-200 rounded-lg">
+            <div class="stat-title">Filtered</div>
+            <div id="filteredCount" class="stat-value text-secondary">0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- QR Codes Grid -->
+    <div id="qrGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <!-- QR codes will be inserted here -->
+    </div>
+
+    <!-- Loading State -->
+    <div id="loadingState" class="flex justify-center items-center py-12">
+      <span class="loading loading-spinner loading-lg"></span>
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="hidden card bg-base-100 shadow-xl rounded-2xl">
+      <div class="card-body items-center text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 text-base-content opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+        </svg>
+        <h2 class="card-title mt-4">No QR Codes Found</h2>
+        <p class="opacity-70">Add clues in the Seed page to generate QR codes</p>
+        <div class="card-actions mt-4">
+          <a href="/seed" class="btn btn-primary">Go to Seed Page</a>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Logout Modal -->
+  <dialog id="logoutModal" class="modal">
+    <div class="modal-box">
+      <h3 class="text-lg font-bold">Confirm Logout</h3>
+      <p class="py-2">Are you sure you want to log out?</p>
+      <div class="modal-action">
+        <form method="dialog"><button class="btn">Cancel</button></form>
+        <button id="confirmLogout" class="btn btn-error">Logout</button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
+
+  <!-- Toast Container -->
+  <div id="toastContainer"
+    class="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 flex flex-col items-center gap-2">
+  </div>
+
+  <script>
+    let allClues = [];
+    let filteredClues = [];
+
+    // Pathway emoji mapping
+    const pathwayEmoji = {
+      red: '🔴',
+      blue: '🔵',
+      yellow: '🟡',
+      green: '🟢'
+    };
+
+    // Toast notification function
+    function toast(text, kind = 'info', ms = 6000) {
+      const c = document.getElementById('toastContainer');
+      if (!c) return;
+
+      const cls =
+        kind === 'success' ? 'alert-success' :
+          kind === 'error' ? 'alert-error' :
+            kind === 'warning' ? 'alert-warning' : 'alert-info';
+
+      const el = document.createElement('div');
+      el.className = `alert shadow-lg mb-2 ${cls}`;
+      el.innerHTML = `<div class="flex-1">${text}</div>`;
+
+      c.appendChild(el);
+      setTimeout(() => el.remove(), ms);
+    }
+
+    // Logout functionality
+    async function doLogout() {
+      try {
+        await fetch("/logout", { method: "POST" });
+      } catch (e) {
+        console.error("Logout request failed:", e);
+      }
+      location.href = "/admin/login";
+    }
+
+    document.getElementById("confirmLogout")?.addEventListener("click", async () => {
+      document.getElementById("logoutModal").close();
+      await doLogout();
+    });
+
+    // Load QR data
+    async function loadQRData(pathway = '') {
+      try {
+        const url = pathway ? `/api/qr/data?pathway=${pathway}` : '/api/qr/data';
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || "Failed to load QR data");
+
+        allClues = data.clues || [];
+        updateStats();
+        renderQRCodes();
+      } catch (err) {
+        console.error(err);
+        toast("Failed to load QR codes", "error");
+        document.getElementById('loadingState').classList.add('hidden');
+        document.getElementById('emptyState').classList.remove('hidden');
+      }
+    }
+
+    // Update statistics
+    function updateStats() {
+      const pathway = document.getElementById('pathwayFilter').value;
+      
+      if (pathway) {
+        filteredClues = allClues.filter(c => c.pathway === pathway);
+      } else {
+        filteredClues = allClues;
+      }
+
+      document.getElementById('totalCount').textContent = allClues.length;
+      document.getElementById('filteredCount').textContent = filteredClues.length;
+    }
+
+    // Render QR codes
+    function renderQRCodes() {
+      const grid = document.getElementById('qrGrid');
+      const loadingState = document.getElementById('loadingState');
+      const emptyState = document.getElementById('emptyState');
+
+      loadingState.classList.add('hidden');
+
+      if (filteredClues.length === 0) {
+        grid.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      // Sort clues by pathway and index
+      filteredClues.sort((a, b) => {
+        if (a.pathway !== b.pathway) {
+          return a.pathway.localeCompare(b.pathway);
+        }
+        return a.index - b.index;
+      });
+
+      grid.innerHTML = filteredClues.map(clue => `
+        <div class="card bg-base-100 shadow-xl rounded-2xl qr-card" data-clue-id="${clue.id}">
+          <div class="card-body items-center text-center p-4">
+            <div class="badge badge-lg ${getPathwayBadgeClass(clue.pathway)} mb-2">
+              ${pathwayEmoji[clue.pathway] || ''} ${clue.pathway.toUpperCase()}
+            </div>
+            <h3 class="card-title text-lg">Clue #${clue.index}</h3>
+            <div id="qr-${clue.id}" class="bg-white p-3 rounded-lg my-3"></div>
+            <div class="text-sm opacity-70 max-w-full break-words">
+              <strong>Content:</strong><br/>
+              ${clue.content}
+            </div>
+            <div class="divider my-2"></div>
+            <div class="text-xs font-mono bg-base-200 px-3 py-2 rounded">
+              ${clue.qrcode}
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      // Generate QR codes after DOM is updated
+      setTimeout(() => {
+        filteredClues.forEach(clue => {
+          const container = document.getElementById(`qr-${clue.id}`);
+          if (container) {
+            // Clear any existing QR code
+            container.innerHTML = '';
+            // Generate new QR code
+            new QRCode(container, {
+              text: clue.qrcode,
+              width: 180,
+              height: 180,
+              colorDark: "#000000",
+              colorLight: "#ffffff",
+              correctLevel: QRCode.CorrectLevel.M
+            });
+          }
+        });
+      }, 100);
+    }
+
+    // Get badge class for pathway
+    function getPathwayBadgeClass(pathway) {
+      const classes = {
+        red: 'badge-error',
+        blue: 'badge-info',
+        yellow: 'badge-warning',
+        green: 'badge-success'
+      };
+      return classes[pathway] || 'badge-neutral';
+    }
+
+    // Pathway filter change handler
+    document.getElementById('pathwayFilter')?.addEventListener('change', (e) => {
+      const pathway = e.target.value;
+      updateStats();
+      renderQRCodes();
+    });
+
+    // Get pathway color
+    function getPathwayColor(pathway) {
+      const colors = {
+        red: [239, 68, 68],      // red-500
+        blue: [59, 130, 246],    // blue-500
+        yellow: [234, 179, 8],   // yellow-500
+        green: [34, 197, 94]     // green-500
+      };
+      return colors[pathway] || [107, 114, 128]; // gray-500
+    }
+
+    // Export to PDF functionality
+    document.getElementById('exportPdfBtn')?.addEventListener('click', async () => {
+      if (filteredClues.length === 0) {
+        toast("No QR codes to export", "warning");
+        return;
+      }
+
+      const btn = document.getElementById('exportPdfBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading loading-spinner loading-sm mr-2"></span>Generating PDF...';
+
+      try {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const margin = 15;
+        const cardWidth = 60;
+        const cardHeight = 85;
+        const spacing = 5;
+        const cols = 3;
+
+        let x = margin;
+        let y = margin + 20;
+        let isFirstPage = true;
+
+        // Pathway info
+        const pathway = document.getElementById('pathwayFilter').value;
+        const pathwayColor = pathway ? getPathwayColor(pathway) : [107, 114, 128];
+
+        // Add header to each page
+        function addPageHeader() {
+          // Background rectangle for header
+          pdf.setFillColor(30, 30, 30);
+          pdf.rect(0, 0, pageWidth, 18, 'F');
+          
+          // Title
+          pdf.setTextColor(255, 255, 255);
+          pdf.setFontSize(16);
+          pdf.setFont(undefined, 'bold');
+          const title = pathway
+            ? `Cyberhunt QR Codes - ${pathway.toUpperCase()} Pathway`
+            : 'Cyberhunt QR Codes - All Pathways';
+          pdf.text(title, pageWidth / 2, 11, { align: 'center' });
+          
+          // Reset text color
+          pdf.setTextColor(0, 0, 0);
+        }
+
+        // Add header to first page
+        addPageHeader();
+
+        for (let i = 0; i < filteredClues.length; i++) {
+          const clue = filteredClues[i];
+          
+          // Check if we need a new row
+          if (i > 0 && i % cols === 0) {
+            x = margin;
+            y += cardHeight + spacing;
+          }
+
+          // Check if we need a new page
+          if (y + cardHeight > pageHeight - margin) {
+            pdf.addPage();
+            addPageHeader();
+            x = margin;
+            y = margin + 20;
+          }
+
+          const clueColor = getPathwayColor(clue.pathway);
+
+          // Draw card background
+          pdf.setFillColor(248, 250, 252);
+          pdf.roundedRect(x, y, cardWidth, cardHeight, 2, 2, 'F');
+
+          // Draw card border
+          pdf.setDrawColor(...clueColor);
+          pdf.setLineWidth(0.5);
+          pdf.roundedRect(x, y, cardWidth, cardHeight, 2, 2, 'S');
+
+          // Pathway badge at top
+          const badgeY = y + 3;
+          pdf.setFillColor(...clueColor);
+          pdf.roundedRect(x + 3, badgeY, cardWidth - 6, 6, 1, 1, 'F');
+          
+          pdf.setTextColor(255, 255, 255);
+          pdf.setFontSize(8);
+          pdf.setFont(undefined, 'bold');
+          pdf.text(clue.pathway.toUpperCase(), x + cardWidth / 2, badgeY + 4.5, { align: 'center' });
+
+          // Clue number
+          pdf.setTextColor(0, 0, 0);
+          pdf.setFontSize(12);
+          pdf.setFont(undefined, 'bold');
+          pdf.text(`Clue #${clue.index}`, x + cardWidth / 2, y + 13, { align: 'center' });
+
+          // Get QR code canvas and add to PDF
+          const qrContainer = document.getElementById(`qr-${clue.id}`);
+          if (qrContainer) {
+            const canvas = qrContainer.querySelector('canvas');
+            if (canvas) {
+              const imgData = canvas.toDataURL('image/png');
+              const qrSize = 45;
+              const qrX = x + (cardWidth - qrSize) / 2;
+              const qrY = y + 16;
+              
+              // White background for QR
+              pdf.setFillColor(255, 255, 255);
+              pdf.roundedRect(qrX - 1, qrY - 1, qrSize + 2, qrSize + 2, 1, 1, 'F');
+              
+              // Add QR code
+              pdf.addImage(imgData, 'PNG', qrX, qrY, qrSize, qrSize);
+            }
+          }
+
+          // Divider line
+          const dividerY = y + 64;
+          pdf.setDrawColor(200, 200, 200);
+          pdf.setLineWidth(0.3);
+          pdf.line(x + 5, dividerY, x + cardWidth - 5, dividerY);
+
+          // QR code identifier at bottom
+          pdf.setTextColor(60, 60, 60);
+          pdf.setFontSize(7);
+          pdf.setFont(undefined, 'normal');
+          
+          // Split long QR codes into multiple lines
+          const qrText = clue.qrcode;
+          const maxCharsPerLine = 18;
+          if (qrText.length <= maxCharsPerLine) {
+            pdf.text(qrText, x + cardWidth / 2, dividerY + 5, { align: 'center' });
+          } else {
+            const line1 = qrText.substring(0, maxCharsPerLine);
+            const line2 = qrText.substring(maxCharsPerLine, maxCharsPerLine * 2);
+            pdf.text(line1, x + cardWidth / 2, dividerY + 4, { align: 'center' });
+            if (line2) {
+              pdf.text(line2.length > maxCharsPerLine ? line2.substring(0, maxCharsPerLine) + '...' : line2,
+                       x + cardWidth / 2, dividerY + 8, { align: 'center' });
+            }
+          }
+
+          // Short content preview
+          pdf.setFontSize(6);
+          pdf.setTextColor(100, 100, 100);
+          const contentPreview = clue.content.length > 35 ? clue.content.substring(0, 35) + '...' : clue.content;
+          const lines = pdf.splitTextToSize(contentPreview, cardWidth - 8);
+          pdf.text(lines.slice(0, 2), x + cardWidth / 2, dividerY + 13, { align: 'center', maxWidth: cardWidth - 8 });
+
+          x += cardWidth + spacing;
+        }
+
+        // Add footer to each page
+        const totalPages = pdf.internal.getNumberOfPages();
+        for (let p = 1; p <= totalPages; p++) {
+          pdf.setPage(p);
+          pdf.setFontSize(8);
+          pdf.setTextColor(150, 150, 150);
+          pdf.text(`Page ${p} of ${totalPages}`, pageWidth / 2, pageHeight - 5, { align: 'center' });
+          pdf.text(`Generated: ${new Date().toLocaleString()}`, pageWidth - margin, pageHeight - 5, { align: 'right' });
+        }
+
+        // Save PDF
+        const filename = pathway
+          ? `cyberhunt-qr-${pathway}-${new Date().toISOString().split('T')[0]}.pdf`
+          : `cyberhunt-qr-all-${new Date().toISOString().split('T')[0]}.pdf`;
+        pdf.save(filename);
+        
+        toast("PDF exported successfully!", "success");
+      } catch (err) {
+        console.error('PDF export error:', err);
+        toast("Failed to export PDF", "error");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Export to PDF
+        `;
+      }
+    });
+
+    // Load QR codes on page load
+    loadQRData();
+  </script>
+</body>
+
+</html>

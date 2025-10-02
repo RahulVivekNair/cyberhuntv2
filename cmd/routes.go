@@ -64,6 +64,10 @@ func SetupRoutes(h *handlers.Handler, jwtSecret string) *gin.Engine {
 	r.PUT("/api/clues/:id", m.AdminAuthMiddleware(), h.UpdateClue)
 	r.DELETE("/api/clues/:id", m.AdminAuthMiddleware(), h.DeleteClue)
 
+	// QR Code routes
+	r.GET("/qr", m.AdminAuthMiddleware(), h.QRPage)
+	r.GET("/api/qr/data", m.AdminAuthMiddleware(), h.GetQRData)
+
 	r.NoRoute(func(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 	})
