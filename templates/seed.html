@@ -1,162 +1,156 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="en" data-theme="dark">
 <head>
-  <meta charset="utf-8">
-  <title>Seed Data</title>
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Tailwind + DaisyUI -->
-  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Cyberhunt - Setup</title>
+
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="icon" href="/static/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+  <link rel="manifest" href="/static/site.webmanifest">
+
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
 
-<body class="min-h-screen bg-base-200 font-sans">
+<body class="min-h-screen bg-base-200 font-sans text-base">
 
   <!-- Navbar -->
-  <nav
-    class="w-full bg-base-100 shadow-lg py-2 px-4 sm:py-4 sm:px-6 flex justify-between items-center sticky top-0 z-10 rounded-b-2xl">
-    <h1 class="text-xl sm:text-2xl font-bold text-primary">Cyberhunt Seed</h1>
+  <nav class="navbar bg-base-100 shadow-lg sticky top-0 z-40 px-4 sm:px-6 py-2 sm:py-3">
+    <div class="flex-1">
+      <h1 class="text-xl sm:text-2xl font-bold text-primary">Cyberhunt Setup</h1>
+    </div>
+    <div class="flex-none gap-2 sm:gap-4 flex-wrap">
+      <a href="/admin" class="btn btn-outline btn-primary btn-sm">Admin</a>
+      <button id="logout" class="btn btn-error btn-sm" onclick="logoutModal?.showModal()">Logout</button>
+    </div>
   </nav>
 
-  <div class="container mx-auto p-6">
-    <div class="card w-full max-w-4xl mx-auto bg-base-100 shadow-xl rounded-2xl">
-      <div class="card-body p-6">
-        <h1 class="text-3xl font-bold text-center mb-6 text-primary">Seed Database</h1>
+  <main class="container mx-auto p-4 max-w-5xl space-y-4">
 
-        <!-- Seed Buttons -->
-        <div class="flex flex-col sm:flex-row gap-6 justify-center items-center">
-          <button id="seedGroupsBtn" class="btn btn-primary btn-lg">
-            Seed Groups
-          </button>
-          <button id="seedCluesBtn" class="btn btn-secondary btn-lg">
-            Seed Clues
-          </button>
+    <!-- Dev Seeding -->
+    <div class="card bg-base-100 shadow-xl rounded-2xl">
+      <div class="card-body space-y-4">
+        <h2 class="card-title">Dev</h2>
+        <p class="text-sm opacity-70">Developer-only seeding actions</p>
+
+        <div class="flex flex-wrap gap-4 justify-center">
+          <button id="seedGroupsBtn" class="btn btn-primary">Seed Groups</button>
+          <button id="seedCluesBtn" class="btn btn-secondary">Seed Clues</button>
         </div>
-
-        <!-- Update Total Clues Form -->
-        <div class="mt-8">
-          <h2 class="text-2xl font-bold text-center mb-4 text-primary">Update Game Settings</h2>
-          <div class="form-control w-full max-w-xs mx-auto">
-            <label class="label"><span class="label-text">Total Clues</span></label>
-            <input type="number" id="totalCluesInput" class="input input-bordered input-primary"
-              placeholder="Enter total clues" required min="1" />
-          </div>
-          <div class="text-center mt-4">
-            <button id="updateTotalCluesBtn" class="btn btn-accent btn-lg">
-              Update Total Clues
-            </button>
-          </div>
-        </div>
-
-        <!-- Status Messages -->
-        <div id="statusMessages" class="mt-6"></div>
       </div>
     </div>
-  </div>
+
+    <!-- Game Settings -->
+    <div class="card bg-base-100 shadow-xl rounded-2xl">
+      <div class="card-body space-y-4">
+        <h2 class="card-title">Game Settings</h2>
+        <p class="text-sm opacity-70">Configure game parameters</p>
+
+        <div class="form-control w-full max-w-xs">
+          <label class="label font-semibold">Total Clues</label>
+          <input type="number" id="totalCluesInput" placeholder="Enter total clues"
+                 class="input input-bordered w-full" min="1" required>
+        </div>
+
+        <button id="updateTotalCluesBtn" class="btn btn-accent w-full sm:w-auto">
+          Update Total Clues
+        </button>
+
+        <div id="statusMessages" class="space-y-2 pt-2"></div>
+      </div>
+    </div>
+
+  </main>
+    <dialog id="logoutModal" class="modal">
+    <div class="modal-box">
+      <h3 class="text-lg font-bold">Confirm Logout</h3>
+      <p class="py-2">Are you sure you want to log out?</p>
+      <div class="modal-action">
+        <form method="dialog"><button class="btn">Cancel</button></form>
+        <button id="confirmLogout" class="btn btn-error">Logout</button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
 
   <script>
-    // Show status message
+    // show status using daisyUI alerts
     function showStatus(message, type = "info") {
       const container = document.getElementById("statusMessages");
-      const alert = document.createElement("div");
-      alert.className = `alert alert-${type} mb-2`;
-      alert.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-info shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-        <span>${message}</span>
-        <button class="btn btn-sm btn-circle btn-ghost ml-auto" onclick="this.parentElement.remove()">✕</button>
-      `;
-      container.appendChild(alert);
-
-      // Auto remove after 10 seconds
-      setTimeout(() => {
-        if (alert.parentElement) alert.remove();
-      }, 10000);
+      const el = document.createElement("div");
+      el.className = `alert shadow-lg ${type === "success" ? "alert-success" : type === "error" ? "alert-error" : "alert-info"}`;
+      el.innerHTML = `<span>${message}</span>`;
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 6000);
     }
 
-    // Seed Groups
-    document.getElementById("seedGroupsBtn").addEventListener("click", async () => {
-      const btn = document.getElementById("seedGroupsBtn");
-      const originalText = btn.textContent;
-      btn.disabled = true;
-      btn.textContent = "Seeding...";
-
+    // Seed groups
+    document.getElementById("seedGroupsBtn")?.addEventListener("click", async () => {
       try {
-        const response = await fetch("/api/seed/groups", { method: "POST" });
-        const data = await response.json();
-        if (response.ok) {
-          showStatus("Groups seeded successfully!", "success");
-        } else {
-          showStatus("Failed to seed groups: " + data.error, "error");
-        }
+        const res = await fetch("/api/seed/groups", { method: "POST" });
+        const data = await res.json();
+        if (!res.ok) return showStatus(data.error || "Failed to seed groups", "error");
+        showStatus("Groups seeded successfully!", "success");
       } catch (err) {
         console.error(err);
-        showStatus("Failed to seed groups: " + err.message, "error");
-      } finally {
-        btn.disabled = false;
-        btn.textContent = originalText;
+        showStatus("Network error while seeding groups", "error");
       }
     });
 
-    // Seed Clues
-    document.getElementById("seedCluesBtn").addEventListener("click", async () => {
-      const btn = document.getElementById("seedCluesBtn");
-      const originalText = btn.textContent;
-      btn.disabled = true;
-      btn.textContent = "Seeding...";
-
+    // Seed clues
+    document.getElementById("seedCluesBtn")?.addEventListener("click", async () => {
       try {
-        const response = await fetch("/api/seed/clues", { method: "POST" });
-        const data = await response.json();
-        if (response.ok) {
-          showStatus("Clues seeded successfully!", "success");
-        } else {
-          showStatus("Failed to seed clues: " + data.error, "error");
-        }
+        const res = await fetch("/api/seed/clues", { method: "POST" });
+        const data = await res.json();
+        if (!res.ok) return showStatus(data.error || "Failed to seed clues", "error");
+        showStatus("Clues seeded successfully!", "success");
       } catch (err) {
         console.error(err);
-        showStatus("Failed to seed clues: " + err.message, "error");
-      } finally {
-        btn.disabled = false;
-        btn.textContent = originalText;
+        showStatus("Network error while seeding clues", "error");
       }
     });
 
-    // Update Total Clues
-    document.getElementById("updateTotalCluesBtn").addEventListener("click", async () => {
+    // Update total clues
+    document.getElementById("updateTotalCluesBtn")?.addEventListener("click", async () => {
       const input = document.getElementById("totalCluesInput");
       const totalClues = parseInt(input.value);
       if (!totalClues || totalClues < 1) {
-        showStatus("Please enter a valid number for total clues", "error");
-        return;
+        return showStatus("Please enter a valid number", "error");
       }
-
-      const btn = document.getElementById("updateTotalCluesBtn");
-      const originalText = btn.textContent;
-      btn.disabled = true;
-      btn.textContent = "Updating...";
-
       try {
-        const response = await fetch("/api/seed/total_clues", {
+        const res = await fetch("/api/seed/total_clues", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ total_clues: totalClues })
         });
-        const data = await response.json();
-        if (response.ok) {
-          showStatus("Total clues updated successfully!", "success");
-          input.value = "";
-        } else {
-          showStatus("Failed to update total clues: " + data.error, "error");
-        }
+        const data = await res.json();
+        if (!res.ok) return showStatus(data.error || "Failed to update total clues", "error");
+        showStatus("Total clues updated successfully!", "success");
+        input.value = "";
       } catch (err) {
         console.error(err);
-        showStatus("Failed to update total clues: " + err.message, "error");
-      } finally {
-        btn.disabled = false;
-        btn.textContent = originalText;
+        showStatus("Network error while updating total clues", "error");
       }
+    });
+    async function doLogout() {
+      try {
+        await fetch("/logout", { method: "POST" });
+      } catch (e) {
+        console.error("Logout request failed:", e);
+      }
+      location.href = "/admin/login";
+    }
+
+    document.getElementById("confirmLogout")?.addEventListener("click", async () => {
+      document.getElementById("logoutModal").close();
+      await doLogout();
     });
   </script>
 </body>
-
 </html>

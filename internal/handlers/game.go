@@ -1,11 +1,9 @@
 package handlers
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -82,11 +80,10 @@ func (h *Handler) ScanQR(c *gin.Context) {
 		return
 	}
 
-	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer cancel()
-		_ = h.BroadcastLeaderboard(ctx)
-	}()
+	if err := h.BroadcastLeaderboard(c.Request.Context()); err != nil {
+		// Log the error but don't fail the request since group was added successfully
+		c.Header("X-Warning", "Leaderboard broadcast failed")
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,

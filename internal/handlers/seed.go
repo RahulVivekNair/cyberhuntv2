@@ -127,6 +127,10 @@ func (h *Handler) UpdateTotalClues(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update total clues"})
 		return
 	}
+	if err := h.BroadcastLeaderboard(c.Request.Context()); err != nil {
+		// Log the error but don't fail the request since group was added successfully
+		c.Header("X-Warning", "Leaderboard broadcast failed")
+	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Total clues updated successfully!"})
 }

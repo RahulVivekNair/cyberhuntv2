@@ -2,16 +2,23 @@
 <html lang="en" data-theme="dark">
 
 <head>
-  <meta charset="utf-8">
-  <title>Cyberhunt Admin</title>
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyberhunt - Admin</title>
+
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-  <!-- Tailwind + DaisyUI -->
+  <!-- Favicons -->
+  <link rel="icon" href="/static/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+  <link rel="manifest" href="/static/site.webmanifest">
+
   <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
 
-<body class="min-h-screen bg-base-200 font-sans">
+<body class="min-h-screen bg-base-200 font-sans text-base">
 
   <!-- Navbar -->
   <nav class="navbar bg-base-100 shadow-lg sticky top-0 z-40 px-4 sm:px-6 py-2 sm:py-3">
@@ -20,289 +27,448 @@
     </div>
     <div class="flex-none gap-2 sm:gap-4 flex-wrap">
       <a href="/seed" class="btn btn-outline btn-primary btn-sm">Seed</a>
-
       <button id="logout" class="btn btn-error btn-sm" onclick="logoutModal?.showModal()">Logout</button>
     </div>
   </nav>
 
-  <div class="container mx-auto p-6">
-    <div class="card w-full max-w-6xl mx-auto bg-base-100 shadow-xl rounded-2xl">
-      <div class="card-body p-6">
-        <h1 class="text-3xl font-bold text-center mb-6 text-primary">Admin Panel</h1>
+  <main class="container mx-auto p-4 max-w-6xl space-y-4">
 
-        <!-- Game Controls -->
-        <div class="card bg-base-200 p-4 mb-6">
-          <div class="text-center">
-            <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-4">
-              <button id="startGameBtn" class="btn btn-primary btn-lg">Start Game</button>
-              <button id="endGameBtn" class="btn btn-error btn-lg">End Game</button>
-              <button id="clearStateBtn" class="btn btn-warning btn-lg">Clear State</button>
-            </div>
-            <div id="gameStatus" class="mt-4 text-center"></div>
-            <div id="statusMessages"></div>
-          </div>
+    <!-- Game Controls -->
+    <div class="card bg-base-100 shadow-xl rounded-2xl">
+      <div class="card-body items-center space-y-4">
+        <h2 class="card-title">Game Controls</h2>
+        <div class="flex flex-wrap gap-3 justify-center">
+          <button id="startGameBtn" class="btn btn-primary">Start Game</button>
+          <button id="endGameBtn" class="btn btn-error" onclick="endGameModal?.showModal()">End Game</button>
+          <button id="clearStateBtn" class="btn btn-warning" onclick="clearStateModal?.showModal()">Clear State</button>
         </div>
+        <div id="gameStatus" class="text-center"></div>
+      </div>
+    </div>
 
-        <!-- Two Column Layout -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Two Column Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-          <!-- Add New Group Form -->
-          <div class="card bg-base-200 p-6">
-            <h2 class="text-2xl font-bold text-center mb-4 text-primary">Add New Group</h2>
-            <form id="addGroupForm">
-              <div class="form-control">
-                <label class="label"><span class="label-text font-semibold">Group Name</span></label>
-                <input type="text" id="groupName" class="input input-bordered" required placeholder="Enter group name">
-              </div>
-              <div class="form-control">
-                <label class="label"><span class="label-text font-semibold">Pathway</span></label>
-                <select id="groupPathway" class="select select-bordered" required>
-                  <option value="">Select pathway</option>
-                  <option value="red">🔴 Red</option>
-                  <option value="blue">🔵 Blue</option>
-                  <option value="yellow">🟡 Yellow</option>
-                  <option value="green">🟢 Green</option>
-                </select>
-              </div>
-              <div class="form-control">
-                <label class="label"><span class="label-text font-semibold">Password</span></label>
-                <input type="password" id="groupPassword" class="input input-bordered" required
-                  placeholder="Enter password">
-                <button type="button" id="generatePassword" class="btn btn-ghost btn-sm mt-2">Generate Password</button>
-              </div>
-              <div class="form-control mt-6">
-                <button type="submit" class="btn btn-primary">
-                  <span class="loading loading-spinner loading-sm hidden" id="addLoading"></span>
-                  Add Group
-                </button>
-              </div>
-            </form>
+      <!-- Add New Group -->
+      <div class="card bg-base-100 shadow-xl rounded-2xl">
+        <div class="card-body space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="card-title">Add New Group</h3>
           </div>
-
-          <!-- Quick Stats -->
-          <div class="card bg-base-200 p-6">
-            <h2 class="text-2xl font-bold text-center mb-4 text-primary">Quick Stats</h2>
-            <div class="stats stats-vertical shadow bg-base-100">
-              <div class="stat">
-                <div class="stat-figure text-primary">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                    class="inline-block w-8 h-8 stroke-current">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4">
-                    </path>
-                  </svg>
-                </div>
-                <div class="stat-title">Total Groups</div>
-                <div id="totalGroups" class="stat-value">-</div>
-              </div>
-              <div class="stat">
-                <div class="stat-figure text-success">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                    class="inline-block w-8 h-8 stroke-current">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                  </svg>
-                </div>
-                <div class="stat-title">Completed</div>
-                <div id="completedGroups" class="stat-value text-success">-</div>
-              </div>
-              <div class="stat">
-                <div class="stat-figure text-warning">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                    class="inline-block w-8 h-8 stroke-current">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  </svg>
-                </div>
-                <div class="stat-title">In Progress</div>
-                <div id="inProgressGroups" class="stat-value text-warning">-</div>
-              </div>
+          <form id="addGroupForm" class="space-y-3">
+            <div class="form-control">
+              <label class="label font-semibold">Group Name</label>
+              <input type="text" id="groupName" required placeholder="Enter group name"
+                class="input input-bordered w-full" />
             </div>
-          </div>
+            <div class="form-control">
+              <label class="label font-semibold">Pathway</label>
+              <select id="groupPathway" required class="select select-bordered w-full text-gray-400">
+                <option value="">Select pathway</option>
+                <option value="red">🔴 Red</option>
+                <option value="blue">🔵 Blue</option>
+                <option value="yellow">🟡 Yellow</option>
+                <option value="green">🟢 Green</option>
+              </select>
+            </div>
+            <div class="form-control">
+              <label class="label font-semibold">Password</label>
+              <input type="password" id="groupPassword" required placeholder="Enter password"
+                class="input input-bordered w-full" />
+            </div>
+            <div class="form-control pt-2">
+              <button type="submit" class="btn btn-primary w-full">Add Group</button>
+            </div>
+          </form>
         </div>
+      </div>
 
-        <!-- Leaderboard -->
-        <div class="card bg-base-200 p-6 mt-6">
-          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-            <h2 class="text-2xl font-bold text-primary">Live Leaderboard</h2>
-            <div class="flex gap-2 mt-2 sm:mt-0 items-center">
-              <span class="btn btn-success btn-sm font-semibold">Live</span>
-              <span class="btn btn-ghost btn-sm text-xs sm:text-sm" id="lastUpdate">Last Change: Never</span>
-            </div>
+      <!-- Quick Stats -->
+      <div class="card bg-base-100 shadow-xl rounded-2xl">
+        <div class="card-body space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="card-title">Quick Stats</h3>
           </div>
-          <div class="overflow-x-auto">
-            <table class="table w-full">
-              <thead>
-                <tr class="bg-primary/10">
-                  <th class="text-sm md:text-base">Rank</th>
-                  <th class="text-sm md:text-base">Group</th>
-                  <th class="text-sm md:text-base">Pathway</th>
-                  <th class="text-sm md:text-base">Progress</th>
-                  <th class="text-sm md:text-base">Status</th>
-                  <th class="text-sm md:text-base">Total Time</th>
-                  <th class="text-sm md:text-base">Actions</th>
-                </tr>
-              </thead>
-              <tbody id="leaderboard">
-                <tr>
-                  <td colspan="7" class="text-center">Loading...</td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="stats stats-vertical shadow w-full">
+            <div class="stat bg-base-200 rounded-lg p-4 border border-base-300">
+              <div class="stat-title">Total Groups</div>
+              <div id="totalGroups" class="stat-value text-primary">-</div>
+            </div>
+            <div class="stat bg-base-200 rounded-lg p-4 border border-base-300">
+              <div class="stat-title">Completed</div>
+              <div id="completedGroups" class="stat-value text-success">-</div>
+            </div>
+            <div class="stat bg-base-200 rounded-lg p-4 border border-base-300">
+              <div class="stat-title">In Progress</div>
+              <div id="inProgressGroups" class="stat-value text-warning">-</div>
+            </div>
           </div>
         </div>
       </div>
+
+    </div> <!-- ✅ close two-column grid -->
+
+    <!-- Leaderboard (full width) -->
+    <div class="card bg-base-100 shadow-xl rounded-2xl">
+      <div class="card-body">
+        <h3 class="card-title self-center">Live Leaderboard</h3>
+        <div class="flex items-center gap-3 mb-3">
+          <span class="btn btn-success btn-xs">Live</span>
+          <time id="lastUpdate">Last Change: Never</time>
+        </div>
+        <div class="overflow-x-auto rounded-box border border-base-300 bg-base-200">
+          <table class="table w-full">
+            <thead>
+              <tr class="bg-primary/10">
+                <th scope="col">Rank</th>
+                <th scope="col">Group</th>
+                <th scope="col">Pathway</th>
+                <th scope="col">Progress</th>
+                <th scope="col">Status</th>
+                <th scope="col">Total Time</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard">
+              <tr>
+                <td colspan="7" class="text-center">Loading...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
-  </div>
+
+  </main>
 
   <!-- Modals -->
   <dialog id="deleteModal" class="modal">
     <div class="modal-box">
-      <h3 class="font-bold text-lg">Delete Group</h3>
-      <p class="py-4">Are you sure you want to delete this group? This action cannot be undone.</p>
+      <h3 class="text-lg font-bold">Delete Group</h3>
+      <p class="py-2">Are you sure you want to delete this group?</p>
       <div class="modal-action">
-        <button class="btn" onclick="deleteModal.close()">Cancel</button>
+        <form method="dialog"><button class="btn">Cancel</button></form>
         <button id="confirmDelete" class="btn btn-error">Delete</button>
       </div>
     </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
   </dialog>
 
   <dialog id="endGameModal" class="modal">
     <div class="modal-box">
-      <h3 class="font-bold text-lg">End Game</h3>
-      <p class="py-4">Are you sure you want to end the game? This will stop all active gameplay.</p>
+      <h3 class="text-lg font-bold">End Game</h3>
+      <p class="py-2">Are you sure you want to end the game?</p>
       <div class="modal-action">
-        <button class="btn" onclick="endGameModal.close()">Cancel</button>
+        <form method="dialog"><button class="btn">Cancel</button></form>
         <button id="confirmEndGame" class="btn btn-error">End Game</button>
       </div>
     </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
   </dialog>
 
   <dialog id="clearStateModal" class="modal">
     <div class="modal-box">
-      <h3 class="font-bold text-lg">Clear Game State</h3>
-      <p class="py-4">Are you sure you want to clear all game state? This will reset all progress and cannot be undone.
-      </p>
+      <h3 class="text-lg font-bold">Clear Game State</h3>
+      <p class="py-2">Are you sure you want to clear all game state?</p>
       <div class="modal-action">
-        <button class="btn" onclick="clearStateModal.close()">Cancel</button>
+        <form method="dialog"><button class="btn">Cancel</button></form>
         <button id="confirmClearState" class="btn btn-warning">Clear State</button>
       </div>
     </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
   </dialog>
 
   <dialog id="logoutModal" class="modal">
     <div class="modal-box">
-      <h3 class="font-bold text-lg">Confirm Logout</h3>
-      <p class="py-4">Are you sure you want to logout?</p>
+      <h3 class="text-lg font-bold">Confirm Logout</h3>
+      <p class="py-2">Are you sure you want to log out?</p>
       <div class="modal-action">
-        <button class="btn" onclick="logoutModal.close()">Cancel</button>
+        <form method="dialog"><button class="btn">Cancel</button></form>
         <button id="confirmLogout" class="btn btn-error">Logout</button>
       </div>
     </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
   </dialog>
 
+  <div id="toastContainer"
+    class="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 flex flex-col items-center gap-2">
+  </div>
+
   <script>
-    (function () {
-      const $ = id => document.getElementById(id);
-      const EL = ['startGameBtn', 'endGameBtn', 'clearStateBtn', 'gameStatus', 'statusMessages', 'addGroupForm', 'groupName', 'groupPathway', 'groupPassword', 'addLoading', 'leaderboard', 'totalGroups', 'completedGroups', 'inProgressGroups', 'lastUpdate'].reduce((acc, id) => { acc[id] = $(id); return acc }, {})
 
-      const api = async (url, opts = {}) => {
-        try { const r = await fetch(url, opts); const j = await r.json(); if (!r.ok) throw new Error(j.error || 'Request failed'); return j } catch (e) { showStatus(`Failed: ${e.message}`, 'error'); throw e }
-      }
+    const startSSE = () => {
+      const es = new EventSource("/api/admin/leaderboard/stream");
 
-      const showStatus = (msg, type = 'info') => {
-        const a = document.createElement('div'); a.className = `alert alert-${type} mb-2`; a.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-info shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span>${msg}</span><button class="btn btn-sm btn-circle btn-ghost ml-auto" onclick="this.parentElement.remove()">✕</button>`;
-        EL.statusMessages.appendChild(a); setTimeout(() => a.remove(), 10000);
-      }
-
-      const fmtElapsed = s => { const pad = n => n.toString().padStart(2, '0'); return [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60].map(pad).join(':') }
-      const formatTime = v => {
-        if (!v || v === '-') return '-';
-        if (typeof v === 'string' && v.includes(':')) { const [m, s] = v.split(':').map(n => parseInt(n, 10)); if (isNaN(m) || isNaN(s)) return '-'; const h = Math.floor(m / 60); return [h, m % 60, s].map(n => n.toString().padStart(2, '0')).join(':') }
-        if (typeof v === 'number') return fmtElapsed(v);
-        return '-';
-      }
-
-      let state = { started: false, ended: false, startTime: null, elapsedInterval: null };
-      let groupToDelete = null, es = null, retries = 0, MAX_RETRIES = 3;
-
-      const setButtons = (startDisabled, endDisabled, startText, endText) => { EL.startGameBtn.disabled = startDisabled; EL.startGameBtn.textContent = startText; EL.endGameBtn.disabled = endDisabled; EL.endGameBtn.textContent = endText }
-      const updateGameStatus = () => {
-        const { started, ended, startTime } = state; let status = '<strong>Game Not Started</strong>';
-        if (ended) status = '<strong>Game Ended</strong>'; else if (started && startTime) { const elapsed = Math.floor((new Date() - startTime) / 1000); status = `<strong>Game Running</strong> - Elapsed Time: ${fmtElapsed(elapsed)}` }
-        EL.gameStatus.innerHTML = status;
-      }
-
-      const loadGameStatus = async () => {
+      es.onmessage = (e) => {
         try {
-          const d = await api('/api/admin/status'); state.ended = d.game_ended;
-          if (d.game_ended) { state.started = false; setButtons(false, false, 'Start Game', 'Game Ended') }
-          else if (d.game_started) { state.started = true; state.startTime = new Date(d.start_time); state.elapsedInterval = setInterval(updateGameStatus, 1000); setButtons(true, false, 'Game Started', 'End Game') }
-          else { state.started = false; setButtons(false, true, 'Start Game', 'End Game') }
-          updateGameStatus();
-        } catch (e) { console.error('Failed to load game status', e) }
+          const data = JSON.parse(e.data);
+          renderStats(data);
+          renderLeaderboard(data);
+          console.log("Leaderboard update:", data);
+        } catch (err) {
+          console.error("Invalid SSE data", err);
+        }
+      };
+
+      es.onerror = (err) => {
+        console.error("SSE error", err);
+      };
+    };
+
+    startSSE();
+
+    function renderStats(data) {
+      document.getElementById("totalGroups").textContent = data.totalGroups;
+      document.getElementById("completedGroups").textContent = data.completed;
+      document.getElementById("inProgressGroups").textContent = data.inProgress;
+      document.getElementById("lastUpdate").textContent =
+        "Last Change: " + new Date().toLocaleTimeString();
+    }
+
+    async function doLogout() {
+      try {
+        await fetch("/logout", { method: "POST" });
+      } catch (e) {
+        console.error("Logout request failed:", e);
+      }
+      location.href = "/admin/login";
+    }
+
+    document.getElementById("confirmLogout")?.addEventListener("click", async () => {
+      document.getElementById("logoutModal").close();
+      await doLogout();
+    });
+
+    function renderRow(group, totalClues) {
+      const progress = `${group.current_clue_idx}/${totalClues}`;
+      const status = group.completed
+        ? '<span class="badge badge-success badge-sm">Completed</span>'
+        : '';
+
+      const rowClass = group.completed ? "bg-success/20" : "";
+
+      const pathway =
+        group.pathway === "red" ? "🔴" :
+          group.pathway === "blue" ? "🔵" :
+            group.pathway === "yellow" ? "🟡" :
+              group.pathway === "green" ? "🟢" :
+                (group.pathway || "-");
+
+      return `
+    <tr class="${rowClass}">
+      <td>${group.rank} ${group.badge || ""}</td>
+      <td>${group.name}</td>
+      <td class>${pathway}</td>
+      <td>
+        <div class="flex items-center gap-2">
+          <span>${progress}</span>
+          <progress 
+            class="progress ${group.completed ? "progress-success" : "progress-primary"} w-16"
+            value="${group.current_clue_idx || 0}" 
+            max="${totalClues}">
+          </progress>
+        </div>
+      </td>
+      <td>${status}</td>
+      <td>${group.total_time || "-"}</td>
+      <td>
+        <button class="btn btn-xs btn-error" onclick="deleteModal.dataset.groupId='${group.id}'; deleteModal.dataset.groupName='${group.name}'; deleteModal.showModal()">DELETE</button>
+      </td>
+    </tr>
+  `;
+    }
+
+    document.getElementById("confirmDelete")?.addEventListener("click", async () => {
+      const modal = document.getElementById("deleteModal");
+      const id = modal.dataset.groupId;  // ← read it back
+      const name = modal.dataset.groupName;
+      modal.close();
+
+      if (!id) return;
+
+      try {
+        const res = await fetch(`/api/admin/group/${id}`, { method: "DELETE" });
+        const payload = await res.json().catch(() => ({})); // ✅ make sure payload is defined
+
+        if (!res.ok) {
+          return toast(payload.error || payload.message || 'Failed to delete group', 'error', 6000);
+        }
+
+        // ✅ backticks for template string, so `name` is actually substituted
+        toast(`${name} deleted successfully`, 'success', 6000);
+        // SSE will auto-refresh table
+      } catch (e) {
+        toast('Delete failed', 'error', 6000);
+        console.error("Delete failed:", e);
+      }
+    });
+
+    function renderLeaderboard(data) {
+      const tbody = document.getElementById("leaderboard");
+
+      if (!data.groups || data.groups.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No data</td></tr>';
+        return;
       }
 
-      const startGame = async () => {
-        EL.startGameBtn.disabled = true; const cd = document.createElement('div'); EL.statusMessages.appendChild(cd);
-        for (let i = 5; i > 0; i--) { cd.textContent = `Starting game in ${i} seconds...`; await new Promise(r => setTimeout(r, 1000)) }
-        cd.remove();
-        try { await api('/api/admin/start', { method: 'POST' }); showStatus('Game started successfully!', 'success'); state.started = true; state.startTime = new Date(); state.elapsedInterval = setInterval(updateGameStatus, 1000); setButtons(true, false, 'Game Started', 'End Game'); updateGameStatus() } catch (e) { EL.startGameBtn.disabled = false }
+      tbody.innerHTML = data.groups
+        .map(g => renderRow(g, data.totalClues))
+        .join("");
+    }
+
+    async function addGroup(name, pathway, password) {
+      const r = await fetch('/api/admin/group', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, pathway, password })
+      });
+      const payload = await r.json().catch(() => ({}));
+      return r.ok ? { ok: true, data: payload } : { ok: false, error: payload.error || payload.message || 'Failed' };
+    }
+
+    /* tiny daisy toast */
+    function toast(text, kind = 'info', ms = 6000) {
+      const c = document.getElementById('toastContainer');
+      if (!c) return;
+
+      const cls =
+        kind === 'success' ? 'alert-success' :
+          kind === 'error' ? 'alert-error' :
+            kind === 'warning' ? 'alert-warning' : 'alert-info';
+
+      const el = document.createElement('div');
+      el.className = `alert shadow-lg mb-2 ${cls}`;
+      el.innerHTML = `<div class="flex-1">${text}</div>`;
+
+      c.appendChild(el);
+      setTimeout(() => el.remove(), ms);
+    }
+
+
+    /* wire form (minimal) */
+    document.getElementById('addGroupForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('groupName').value.trim();
+      const pathway = document.getElementById('groupPathway').value.trim();
+      const password = document.getElementById('groupPassword').value.trim();
+      if (!name || !pathway) return toast('Name and pathway required', 'warning');
+      const res = await addGroup(name, pathway, password);
+      if (!res.ok) return toast(res.error, 'error', 6000);
+      toast(res.data.password ? `Group added - password: ${res.data.password}` : 'Group added', 'success', 6000);
+      e.target.reset();
+
+    });
+
+    // clear state — minimal (no disabled/loading)
+    document.getElementById('confirmClearState')?.addEventListener('click', async () => {
+      try {
+        const res = await fetch('/api/admin/clear', { method: 'POST' });
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok) return toast(payload.error || payload.message || 'Failed to clear state', 'error', 6000);
+
+        toast(payload.message || 'Game state cleared', 'success', 6000);
+        document.getElementById('clearStateModal')?.close();
+        fetchGameStatus();
+        // SSE will refresh the UI
+      } catch (err) {
+        console.error('Clear state error', err);
+        toast('Network error while clearing state', 'error', 6000);
       }
+    });
 
-      const endGame = async () => { endGameModal.close(); try { await api('/api/admin/end', { method: 'POST' }); showStatus('Game ended successfully!', 'success'); state.started = false; state.ended = true; clearInterval(state.elapsedInterval); state.elapsedInterval = null; state.startTime = null; setButtons(false, true, 'Start Game', 'Game Ended'); updateGameStatus() } catch (e) { console.error(e) } }
+    async function fetchGameStatus() {
+  try {
+    const res = await fetch("/api/admin/status");
+    const status = await res.json();
+    if (!res.ok) {
+      return toast(status.error || "Failed to fetch game status", "error", 6000);
+    }
+    updateGameControls(status);
+  } catch (err) {
+    console.error("Status fetch error:", err);
+  }
+}
 
-      const clearState = async () => { clearStateModal.close(); try { await api('/api/admin/clear', { method: 'POST' }); state = { started: false, ended: false, startTime: null, elapsedInterval: null }; clearInterval(state.elapsedInterval); setButtons(false, true, 'Start Game', 'End Game'); updateGameStatus(); showStatus('Game state cleared successfully!', 'success'); updateStats([]) } catch (e) { console.error(e) } }
+let elapsedTimer = null;
 
-      const generatePassword = () => { const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'; EL.groupPassword.value = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('') }
+function updateGameControls(status) {
+  const startBtn = document.getElementById("startGameBtn");
+  const endBtn = document.getElementById("endGameBtn");
+  const statusDiv = document.getElementById("gameStatus");
 
-      const addGroup = async e => { e.preventDefault(); const name = EL.groupName.value.trim(), path = EL.groupPathway.value, password = EL.groupPassword.value.trim(); if (!name || !path || !password) { showStatus('Please fill in all fields.', 'warning'); return } const btn = e.target.querySelector('button[type="submit"]'); btn.disabled = true; EL.addLoading.classList.remove('hidden'); try { const d = await api('/api/admin/group', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, pathway: path, password }) }); showStatus(`Group "${name}" added successfully! Password: ${d.password}`, 'success'); EL.groupName.value = EL.groupPathway.value = EL.groupPassword.value = '' } catch (e) { console.error(e) } finally { btn.disabled = false; EL.addLoading.classList.add('hidden') } }
+  // clear any running timer
+  if (elapsedTimer) {
+    clearInterval(elapsedTimer);
+    elapsedTimer = null;
+  }
 
-      const deleteGroupReq = async () => { if (!groupToDelete) return; try { await api(`/api/admin/group/${groupToDelete.id}`, { method: 'DELETE' }); showStatus(`Group "${groupToDelete.name}" deleted successfully!`, 'success'); deleteModal.close() } catch (e) { console.error(e) } groupToDelete = null }
+  if (!status.game_started) {
+    startBtn.removeAttribute("disabled");
+    endBtn.setAttribute("disabled", "");
+    statusDiv.textContent = "Game not started";
+  } else if (status.game_started && !status.game_ended) {
+    startBtn.setAttribute("disabled", "");
+    endBtn.removeAttribute("disabled");
 
-      const logout = async () => { logoutModal.close(); document.body.style.opacity = '0'; document.body.style.transition = 'opacity 0.3s ease-in-out'; setTimeout(async () => { await fetch('/logout', { method: 'POST' }); window.location.href = '/admin/login' }, 300) }
-
-      window.deleteGroup = (id, name) => { groupToDelete = { id, name }; deleteModal.showModal() }
-
-      const sseConnect = () => {
-        if (es) es.close(); es = new EventSource('/api/admin/leaderboard/stream');
-        es.onmessage = e => { try { updateLeaderboard(JSON.parse(e.data)); retries = 0 } catch (err) { console.error('SSE parse', err) } };
-        es.onerror = () => { if (retries < MAX_RETRIES) { retries++; setTimeout(sseConnect, 1000 * retries) } };
-        es.onopen = () => retries = 0;
+    if (status.start_time) {
+      const startTime = new Date(status.start_time);
+      function updateElapsed() {
+        const now = new Date();
+        const diff = Math.floor((now - startTime) / 1000);
+        const h = Math.floor(diff / 3600);
+        const m = Math.floor((diff % 3600) / 60);
+        const s = diff % 60;
+        statusDiv.textContent = `Game running — Elapsed: ${h}h ${m}m ${s}s`;
       }
+      updateElapsed();
+      elapsedTimer = setInterval(updateElapsed, 1000);
+    } else {
+      statusDiv.textContent = "Game running";
+    }
+  } else if (status.game_ended) {
+    startBtn.setAttribute("disabled", "");
+    endBtn.setAttribute("disabled", "");
+    statusDiv.textContent = "Game ended";
+  }
+}
 
-      const updateLeaderboard = data => {
-        const rows = (data.groups || []).map((g, i) => {
-          const progress = Math.round((g.current_clue_idx / data.totalClues) * 100);
-          const rowClass = g.completed ? 'bg-success/10' : i % 2 ? 'bg-base-200/50' : '';
-          return `
-            <tr class="${rowClass}">
-              <td class="whitespace-nowrap text-sm md:text-base font-bold">${g.rank} ${g.badge || ''}</td>
-              <td class="text-sm md:text-base font-medium">${g.name}</td>
-              <td class="text-sm md:text-base"><span class="badge badge-outline">${(g.pathway || '').toUpperCase()}</span></td>
-              <td class="text-sm md:text-base">
-                <div class="flex items-center gap-2">
-                  <span>${g.current_clue_idx}/${data.totalClues}</span>
-                  <div class="w-12 bg-base-300 rounded-full h-2"><div class="bg-primary h-2 rounded-full" style="width: ${progress}%"></div></div>
-                </div>
-              </td>
-              <td class="text-sm md:text-base"><span class="badge ${g.completed ? 'badge-success">Done' : 'badge-warning">Playing'}</span></td>
-              <td class="text-sm md:text-base font-mono">${formatTime(g.total_time)}</td>
-              <td class="text-sm md:text-base"><button class="btn btn-error btn-xs" onclick="deleteGroup(${g.id}, '${g.name.replace(/'/g, "\\'")}')">Delete</button></td>
-            </tr>`
-        }).join('') || '<tr><td colspan="7" class="text-center">No groups</td></tr>';
-        EL.leaderboard.innerHTML = rows;
-        updateStats(data.groups || []);
-        EL.lastUpdate.textContent = `Last Change: ${new Date().toLocaleTimeString()}`;
-      }
+document.getElementById("startGameBtn")?.addEventListener("click", async () => {
+  try {
+    const res = await fetch("/api/admin/start", { method: "POST" });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok) return toast(payload.error || "Failed to start game", "error", 6000);
+    toast(payload.message || "Game started!", "success", 6000);
+    fetchGameStatus(); // refresh state
+  } catch (err) {
+    toast("Network error while starting game", "error", 6000);
+  }
+});
 
-      const updateStats = groups => { const g = groups || []; const completed = g.filter(x => x.completed).length; EL.totalGroups.textContent = g.length; EL.completedGroups.textContent = completed; EL.inProgressGroups.textContent = g.length - completed }
+document.getElementById("confirmEndGame")?.addEventListener("click", async () => {
+  const modal = document.getElementById("endGameModal");
+  modal.close();
 
-      // wire events
-      EL.startGameBtn.onclick = startGame; EL.endGameBtn.onclick = () => endGameModal.showModal(); EL.clearStateBtn.onclick = () => clearStateModal.showModal(); document.getElementById('confirmEndGame').onclick = endGame; document.getElementById('confirmClearState').onclick = clearState; document.getElementById('confirmDelete').onclick = deleteGroupReq; document.getElementById('confirmLogout').onclick = logout; EL.addGroupForm.onsubmit = addGroup; document.getElementById('generatePassword').onclick = generatePassword; document.getElementById('logout').onclick = () => logoutModal.showModal();
+  try {
+    const res = await fetch("/api/admin/end", { method: "POST" });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok) return toast(payload.error || "Failed to end game", "error", 6000);
+    toast(payload.message || "Game ended!", "success", 6000);
+    fetchGameStatus(); // refresh state
+  } catch (err) {
+    toast("Network error while ending game", "error", 6000);
+  }
+});
 
-      // init
-      loadGameStatus(); sseConnect();
-    })();
+// run once on page load
+fetchGameStatus();
   </script>
 </body>
 
