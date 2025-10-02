@@ -35,6 +35,7 @@ func (h *Handler) Login(c *gin.Context) {
 	}
 
 	// Set cookie
+	c.SetSameSite(http.SameSiteStrictMode)
 	c.SetCookie("auth", tokenString, 3600*24, "/", "", false, true)
 
 	// Respond with success (JSON)
@@ -69,6 +70,7 @@ func (h *Handler) AdminLogin(c *gin.Context) {
 	}
 
 	// Set cookie
+	c.SetSameSite(http.SameSiteStrictMode)
 	c.SetCookie("adminAuth", tokenString, 3600*24, "/", "", false, true)
 
 	// Respond with success instead of redirect
