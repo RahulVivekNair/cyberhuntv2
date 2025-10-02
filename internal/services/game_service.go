@@ -138,7 +138,7 @@ func (s *GameService) GetGameStatus(ctx context.Context) (*models.GameSettings, 
 
 func (s *GameService) GetTotalClues(ctx context.Context) (int, error) {
 	var totalClues int
-	err := s.db.QueryRowContext(ctx, `SELECT total_clues FROM game_settings`).Scan(&totalClues)
+	err := s.db.QueryRowContext(ctx, `SELECT total_clues FROM game_settings WHERE id=1`).Scan(&totalClues)
 	if err != nil {
 		// default to 1 if no value exists
 		totalClues = 1

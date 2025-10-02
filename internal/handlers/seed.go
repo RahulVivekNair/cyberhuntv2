@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -133,4 +134,117 @@ func (h *Handler) UpdateTotalClues(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Total clues updated successfully!"})
+}
+
+// Get all clues
+func (h *Handler) GetAllClues(c *gin.Context) {
+	clues, err := h.clueService.GetAllClues(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch clues"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"clues": clues})
+}
+
+// Add new clue
+func (h *Handler) AddClue(c *gin.Context) {
+	var request struct {
+		Pathway string `json:"pathway" binding:"required"`
+		Index   string `json:"index" binding:"required"`
+		Content string `json:"content" binding:"required"`
+		QRCode  string `json:"qrcode" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request: " + err.Error()})
+		return
+	}
+
+	clueIndex, err := strconv.Atoi(request.Index)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Index must be a valid integer"})
+		return
+	}
+
+	if clueIndex < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Index must be greater than or equal to 0"})
+		return
+	}
+
+	err = h.clueService.AddClue(c.Request.Context(), request.Pathway, clueIndex, request.Content, request.QRCode)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add clue: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Clue added successfully!"})
+}
+
+// Update existing clue
+func (h *Handler) UpdateClue(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Clue ID is required"})
+		return
+	}
+
+	var clueID int
+	if _, err := fmt.Sscanf(id, "%d", &clueID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid clue ID"})
+		return
+	}
+
+	var request struct {
+		Pathway string `json:"pathway" binding:"required"`
+		Index   string `json:"index" binding:"required"`
+		Content string `json:"content" binding:"required"`
+		QRCode  string `json:"qrcode" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request: " + err.Error()})
+		return
+	}
+
+	clueIndex, err := strconv.Atoi(request.Index)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Index must be a valid integer"})
+		return
+	}
+
+	if clueIndex < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Index must be greater than or equal to 0"})
+		return
+	}
+
+	err = h.clueService.UpdateClue(c.Request.Context(), clueID, request.Pathway, clueIndex, request.Content, request.QRCode)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update clue: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Clue updated successfully!"})
+}
+
+// Delete clue
+func (h *Handler) DeleteClue(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Clue ID is required"})
+		return
+	}
+
+	var clueID int
+	if _, err := fmt.Sscanf(id, "%d", &clueID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid clue ID"})
+		return
+	}
+
+	err := h.clueService.DeleteClue(c.Request.Context(), clueID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete clue: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Clue deleted successfully!"})
 }

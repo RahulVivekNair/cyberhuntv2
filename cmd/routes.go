@@ -58,6 +58,12 @@ func SetupRoutes(h *handlers.Handler, jwtSecret string) *gin.Engine {
 	r.POST("/api/seed/clues", m.AdminAuthMiddleware(), h.SeedClues)
 	r.POST("/api/seed/total_clues", m.AdminAuthMiddleware(), h.UpdateTotalClues)
 
+	// Clue management routes
+	r.GET("/api/clues", m.AdminAuthMiddleware(), h.GetAllClues)
+	r.POST("/api/clues", m.AdminAuthMiddleware(), h.AddClue)
+	r.PUT("/api/clues/:id", m.AdminAuthMiddleware(), h.UpdateClue)
+	r.DELETE("/api/clues/:id", m.AdminAuthMiddleware(), h.DeleteClue)
+
 	r.NoRoute(func(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 	})
