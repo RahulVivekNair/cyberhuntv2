@@ -85,7 +85,7 @@ func ensureDefaultAdmin(db *sql.DB) error {
 		INSERT INTO admins (name, password)
 		SELECT $1, $2
 		WHERE NOT EXISTS (SELECT 1 FROM admins)
-	`, "admin", "admin")
+	`, "admin", "cyberhunt$admin")
 	return err
 }
 
