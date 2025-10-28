@@ -84,7 +84,7 @@
         <div class="card bg-base-100 shadow-xl rounded-2xl">
             <div class="card-body">
 
-                <div id="clue" class="p-4 bg-base-200 rounded-lg  text-center text-lg font-medium" style="user-select: none;">
+                <div id="clue" class="p-4 bg-base-200 rounded-lg text-center text-lg font-medium transition-all duration-300" style="user-select: none;">
                     {{.Clue}}
                 </div>
             </div>
@@ -217,8 +217,15 @@
                 const data = await res.json();
 
                 document.getElementById("clueProgress").textContent =
-                    data.completed ? "COMPLETE" : `Clue: ${data.progress}`;
-                document.getElementById("clue").textContent = data.clue;
+    data.completed ? "COMPLETE" : `Clue: ${data.progress}`;
+
+const clueBox = document.getElementById("clue");
+clueBox.textContent = data.clue;
+// Trigger highlight animation
+clueBox.classList.add("animate-pulse", "ring-2", "ring-green-500");
+setTimeout(() => {
+    clueBox.classList.remove("animate-pulse", "ring-2", "ring-green-500");
+}, 1500);
                 const progressBar = document.getElementById("groupProgressBar");
                 if (progressBar) {
                     if (data.completed) {
